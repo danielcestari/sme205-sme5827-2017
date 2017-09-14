@@ -1,12 +1,11 @@
 
 # coding: utf-8
 
-# In[24]:
+# In[13]:
 
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from grid2vtk import grid2vtk
 #get_ipython().magic('matplotlib inline')
 
 f = open(sys.argv[1],'rt')
@@ -75,46 +74,7 @@ for j in range(1,ny-1):
 
 dxi = 1.0/nx
 deta = 1.0/ny
-N = 50; 100
-
-
-# parametros para (airfoil)
-#            Gx = (g22*P*dxdxi+g11*Q*dxdeta)
-#            Gy = (g22*P*dydxi+g11*Q*dydeta)
-xi_rf = 2.0
-eta_rf = 0.5
-a_rf=0.000010
-b_rf=0.00001
-c_rf=0.0000001
-d_rf=0.0000001
-
-# parametros para (airfoil)
-#            Gx = g*(P*dxdxi+Q*dxdeta)
-#            Gy = g*(P*dydxi+Q*dydeta)
-xi_rf = 0.45
-eta_rf = 1.0
-a_rf=0.000040
-b_rf=0.000015
-c_rf=9.1
-d_rf=9.1
-
-#a_rf=0
-b_rf=0
-#c_rf=0
-d_rf=0
-
-# parametros para swan.txt
-#            Gx = g*(P*dxdxi+Q*dxdeta)
-#            Gy = g*(P*dydxi+Q*dydeta)
-"""
-xi_rf = 0.01
-eta_rf = 0.01
-a_rf=0.00150
-b_rf=0.00155
-c_rf=1
-d_rf=1
-"""
-
+N = 100
 for k in range(N):
     for j in range(1,ny-1):
         for i in range(1,nx-1):
@@ -128,24 +88,8 @@ for k in range(N):
             a = 4.0*(deta**2)*g22
             b = 4.0*dxi*deta*g12
             c = 4.0*(dxi**2)*g11
-            g = np.abs(g11*g22-g12**2)
-            #g = 1
-            xixi_rf = i*dxi-xi_rf
-            etaeta_rf = j*deta-eta_rf
-            #print((xixi_rf, np.abs(xixi_rf), (xixi_rf)/np.abs(xixi_rf+1.0e-2), np.exp(-c_rf*np.abs(xixi_rf))))
-            P = a_rf*(xixi_rf)/np.abs(xixi_rf+1.0e-2)*np.exp(-c_rf*np.abs(xixi_rf)) + b_rf*(xixi_rf)/np.abs(xixi_rf)*np.exp(-c_rf*np.sqrt(xixi_rf**2+etaeta_rf**2))
-            #P = a_rf*np.exp(-c_rf*np.abs(xixi_rf))
-            #print(P)
-            Q=0.0
-            Q = a_rf*(etaeta_rf)/np.abs(etaeta_rf+1.0e-2)*np.exp(-c_rf*np.abs(etaeta_rf)) + b_rf*(etaeta_rf)/np.abs(etaeta_rf)*np.exp(-c_rf*np.sqrt(xixi_rf**2+etaeta_rf**2))
-            Gx = g*(P*dxdxi+Q*dxdeta)
-            Gy = g*(P*dydxi+Q*dydeta)
-            #Gx = (g22*P*dxdxi+g11*Q*dxdeta)
-            #Gy = (g22*P*dydxi+g11*Q*dydeta)
-            gridx[j,i] = -1.0*Gx+(1.0/(2*(a+c)))*(a*(gridx[j,i+1]+gridx[j,i-1])+c*(gridx[j+1,i]+gridx[j-1,i]))-0.5*(b*(gridx[j+1,i+1]+gridx[j-1,i-1]-gridx[j+1,i-1]-gridx[j-1,i+1]))
-            gridy[j,i] = -1.0*Gy+(1.0/(2*(a+c)))*(a*(gridy[j,i+1]+gridy[j,i-1])+c*(gridy[j+1,i]+gridy[j-1,i]))-0.5*(b*(gridy[j+1,i+1]+gridy[j-1,i-1]-gridy[j+1,i-1]-gridy[j-1,i+1]))
-
-grid2vtk(gridx,gridy,'test.vtk')
+            gridx[j,i] = (1.0/(2*(a+c)))*(a*(gridx[j,i+1]+gridx[j,i-1])+c*(gridx[j+1,i]+gridx[j-1,i]))-0.5*(b*(gridx[j+1,i+1]+gridx[j-1,i-1]-gridx[j+1,i-1]-gridx[j-1,i+1]))
+            gridy[j,i] = (1.0/(2*(a+c)))*(a*(gridy[j,i+1]+gridy[j,i-1])+c*(gridy[j+1,i]+gridy[j-1,i]))-0.5*(b*(gridy[j+1,i+1]+gridy[j-1,i-1]-gridy[j+1,i-1]-gridy[j-1,i+1]))
 
 for i in range(nx):
     plt.plot(gridx[i,:],gridy[i,:],color='gray')
