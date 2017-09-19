@@ -153,7 +153,7 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# corner_i => next => right
 		ci = cn_table[i,:]
 		cn_right = cn_table[ci[3], 7]
-		ci[5] = -1 if cn_right == -1 else cn_table[cn_right, 3]
+		ci[5] = -1 if cn_right == -1 else cn_right
 	
 	fc_hash = None
 	
@@ -181,10 +181,11 @@ def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	
 	# edge closure are the vertex that form the edge
 	# TODO To see if should consider the edges formed from the corners
-	for v in vt:
-		closure['vertices'].add( v[0] )
-		closure['vertices'].add( v[1] )
-		closure['edges'].add( v )
+	for e in ed:
+		print(e)
+		closure['vertices'].add( list(e)[0] )
+		closure['vertices'].add( list(e)[1] )
+		closure['edges'].add( frozenset(e) )
 	
 	# face closure
 	for f in fc:
@@ -199,9 +200,9 @@ def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		closure['vertices'].add( v[1] )
 		closure['vertices'].add( v[2] )
 		# supposing the corners are sorted, then the following edges are in the correct order
-		closure['edges'].add( (v[0], v[1]) )
-		closure['edges'].add( (v[1], v[2]) )
-		closure['edges'].add( (v[2], v[0]) )
+		closure['edges'].add( frozenset((v[0], v[1])) )
+		closure['edges'].add( frozenset((v[1], v[2])) )
+		closure['edges'].add( frozenset((v[2], v[0])) )
 		# add the face to its closure
 		closure['faces'].add( f )
 	
@@ -210,7 +211,7 @@ def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
 
 
 
-def star(cnt, vt_hash, vt=[], ed=[], fc=[])):
+def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	"""
 	"""
 	star = {'vertices':set(), 'edges':set(), 'faces':set()}
@@ -227,7 +228,7 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[])):
 		# the edges are counter-clockwise oriented, so only have to get the edges
 		# leaving the corner, i.e., get the vertex of the next corner and mount the
 		# edge
-		[star['edges'].add( (v, v_next) ) for v_next in cnt[cnt[cns, 3], 1]]
+		[star['edges'].add( frozenset((v, v_next)) ) for v_next in cnt[cnt[cns, 3], 1]]
 		
 		# regarding the faces that contain this vertex v
 		# already have this info on cns, the corners that have this vertex
@@ -242,7 +243,7 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[])):
 		star['vertices'].add( e[1] )
 		
 		# considering that the edges are all with the same orientation, and composed by its vertices
-		star['edges'].add( e )
+		star['edges'].add( frozenset(e) )
 		
 		# get all corners with the vertex of the edge
 		cns = [vt_hash[e[0]], vt_hash[1]]
@@ -270,29 +271,70 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[])):
 		[star['vertices'].add( v ) for v in vs]
 		
 		# add the edges of the face f
-		star['edges'].add( (vs[0], cnt[vs[0], 3]) )
-		star['edges'].add( (cnt[vs[0], 4], vs[0]) )
-		star['edges'].add( (cnt[vs[0], 3], cnt[vs[0], 4]) )
+		star['edges'].add( frozenset((vs[0], cnt[vs[0], 3])) )
+		star['edges'].add( frozenset((cnt[vs[0], 4], vs[0])) )
+		star['edges'].add( frozenset((cnt[vs[0], 3], cnt[vs[0], 4])) )
 		
 		# now get the surrounding faces
 		# get the faces for every opposite corner (column 5 from the corner table)
-		[star['faces'].add( cnt[c[5, 2]] ) for c in cnt[cns,:] if c[5] != -1]
+		[star['faces'].add( cnt[c[5], 2] ) for c in cnt[cns,:] if c[5] != -1]
 	
 	
 	return star
 
+# Dont need, python already have a builtin set difference method 
 def complement():
 	pass
 
 
-def link():
-	pass
-
-
-
-def ring(cnt, vt_hash, vt=[], ed=[], fc=[])):
+def link(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	link = {'vertices':set(), 'edges':set(), 'faces':set()}
 	
-	pass
+	# TODO test if this approach does not have a complexity too high
+	cls = closure(cnt=cnt, vt_hash=vt_hash, vt=vt, ed=ed, fc=fc)
+	str = star(cnt=cnt, vt_hash=vt_hash, vt=vt, ed=ed, fc=fc)
+	cls_str = closure(cnt=cnt, vt_hash=vt_hash, vt=str['vertices'], ed=str['edges'], fc=str['faces'])
+	str_cls = star(cnt=cnt, vt_hash=vt_hash, vt=cls['vertices'], ed=cls['edges'], fc=cls['faces'])
+
+	print(('vt', vt))
+	print(('ed', ed))
+	print(('fc', fc))
+	print()
+	print(('cls', cls))
+	print(('str', str))
+	print(('cls_str', cls_str))
+	print(('str_cls', str_cls))
+
+	# perform the set difference between the closure of the and the star of the closure
+	# meaning the operation close(star(GAMMA)) \ star(close(GAMMA))
+	# where GAMMA is the query object
+	"""
+	for l in link:
+#		link[l] = str_cls[l].difference( cls_str[l] )
+		link[l] = cls_str[l].difference( str_cls[l] )
+	"""
+	l = 'vertices'
+	link[l] = cls_str[l].difference( str_cls[l] )
+	l = 'edges'
+	link[l] = cls_str[l].difference( str_cls[l] )
+	l = 'faces'
+	link[l] = cls_str[l].difference( str_cls[l] )
+#	"""
+	return link
+
+
+
+def ring_1(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	"""
+####
+# Get the 1-ring
+###
+# 
+###
+# Return the vertices of the link
+# since the 1-ring is the set of vertices in the link
+	"""
+	return link(cnt=cnt, vt_hash=vt_hash, vt=vt, ed=ed, fc=fc)['vertices']
 
 
 
