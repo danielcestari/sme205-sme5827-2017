@@ -11,15 +11,16 @@ def compute_corner_table(vertices, faces, oriented=True):
 ### 
 # vertices:		Matrix. The vertices matrix, coordinates (x,y,z) for every point, vertice
 # faces:		Matrix. The faces, in this case triangles, matrix in the VTK format but as python matrix, so the first vertex of the first face is indexed as faces[0,0]
-# oriented:		Boolean. If True consider that the faces are all anti-clockwise oriented
+# oriented:		Boolean. If True consider that the faces are all counter-clockwise oriented
 ###
-# return the corner table
+# return the corner list per vexter and the corner table in a tuple
 	"""
 	cn_table_length = 3*len(faces) +1
 	cn_table = np.ndarray(shape=(cn_table_length, 8), dtype=int, buffer=np.array([-1]*cn_table_length*8))
 
 	# create vertex and face hash
 	# a structure used for, given a vertex retrieve the associated corners
+	# vt_hash is returned as the list of corners for each vertex
 	vt_hash, fc_hash = [], []
 	[vt_hash.append([]) for i in range(len(vertices)+1)]
 	[fc_hash.append([]) for i in range(len(faces)+1)]
@@ -38,10 +39,10 @@ def compute_corner_table(vertices, faces, oriented=True):
 		fj = faces[j]
 		
 		ci = cn_table[i,:]
-		print(('i', i))
-		print(('j', j+1 ))
-		print(('cj', ci))
-		print(('fj', fj))
+#		print(('i', i))
+#		print(('j', j+1 ))
+#		print(('cj', ci))
+#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i
 		ci[0], ci[1], ci[2] = i, fj[0], j+1
 		fc_hash[j+1].append( i )
@@ -50,15 +51,15 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[0]].append(i)
 		i += 1
-		print(('vt_hash', vt_hash))
-		print(('fc_hash', fc_hash))
-		print()
+#		print(('vt_hash', vt_hash))
+#		print(('fc_hash', fc_hash))
+#		print()
 		
 		ci = cn_table[i,:]
-		print(('i', i))
-		print(('j', j+1 ))
-		print(('cj', ci))
-		print(('fj', fj))
+#		print(('i', i))
+#		print(('j', j+1 ))
+#		print(('cj', ci))
+#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i+1
 		ci[0], ci[1], ci[2] = i, fj[1], j+1
 		fc_hash[j+1].append( i )
@@ -67,15 +68,15 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[1]].append(i)
 		i += 1
-		print(('vt_hash', vt_hash))
-		print(('fc_hash', fc_hash))
-		print()
+#		print(('vt_hash', vt_hash))
+#		print(('fc_hash', fc_hash))
+#		print()
 		
 		ci = cn_table[i,:]
-		print(('i', i))
-		print(('j', j+1 ))
-		print(('cj', ci))
-		print(('fj', fj))
+#		print(('i', i))
+#		print(('j', j+1 ))
+#		print(('cj', ci))
+#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i+2
 		ci[0], ci[1], ci[2] = i, fj[2], j+1
 		fc_hash[j+1].append( i )
@@ -84,9 +85,9 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[2]].append(i)
 #		i += 1
-		print(('vt_hash', vt_hash))
-		print(('fc_hash', fc_hash))
-		print()
+#		print(('vt_hash', vt_hash))
+#		print(('fc_hash', fc_hash))
+#		print()
 		
 	i = 1
 	while i < cn_table_length:	
@@ -95,9 +96,9 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# which face am I now ?
 #		j = 10 # need to compute this index
 		#fj = faces[j-1]
-		print(len(cn_table))
-		print(cn_table_length)
-		print(i)
+#		print(len(cn_table))
+#		print(cn_table_length)
+#		print(i)
 		ci = cn_table[i,:]
 		corners = fc_hash[ci[2]]
 		# compute the next and previous corners for the corner_i
@@ -111,7 +112,8 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# compute the next and previous corners for the corner_i+2
 		ci[3], ci[4] = corners[0], corners[1]
 		i += 1
-		
+	
+	# TODO
 	# JUST GIVE AN EXTRA NEXT ON THESE 3 THAT SOLVE ACCORDING TO THE EXAMPLE	
 
 	# then compute the oposite, left and right corners
@@ -130,7 +132,7 @@ def compute_corner_table(vertices, faces, oriented=True):
 		cks = vt_hash[ci[1]]
 		ck_p = set(cn_table[cks, 4])
 		ck = ck_p.intersection(cj)
-		ci[7] = -1 if not len(ck) else cn_table[ck.pop(), 3]
+		ci[7] = -1 if not len(ck) else cn_table[cn_table[ck.pop(), 3], 3]
 		
 
 		# left corner
@@ -142,7 +144,7 @@ def compute_corner_table(vertices, faces, oriented=True):
 		ck = vt_hash[ci[1]]
 		cj_p = set(cn_table[cjs, 4])
 		cj = cj_p.intersection(ck)
-		ci[6] = -1 if not len(cj) else cn_table[cj.pop(), 3]
+		ci[6] = -1 if not len(cj) else cn_table[cn_table[cj.pop(), 3], 3]
 
 
 	for i in range(1, cn_table_length):
@@ -150,13 +152,153 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# opposite corner
 		# corner_i => next => right
 		ci = cn_table[i,:]
-		cn = cn_table[ci[3],:]
-		ci[5] = cn[7]
+		cn_right = cn_table[ci[3], 7]
+		ci[5] = -1 if cn_right == -1 else cn_table[cn_right, 3]
 	
-	vt_hash = None
+	fc_hash = None
 	
-	return cn_table
+	
+	return (vt_hash, cn_table)
 
+
+def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	"""
+####
+# Get the closure for the vertices, edges and faces specified
+###
+# cnt:		The corner table
+# vt_hash:	The vertices hash, given a vertex return the list of its corners
+# vt:		List of vertices
+# ed:		List of edges. Every edge is specified by a tuple containing its vertex, i.e., (V1, V2)
+# fc:		List of faces. 
+###
+# 
+	"""
+	closure = {'vertices': set(), 'edges':set(), 'faces':set()}
+	
+	# vertex closure is the vertex itself
+	closure['vertices'] = set(vt)
+	
+	# edge closure are the vertex that form the edge
+	# TODO To see if should consider the edges formed from the corners
+	for v in vt:
+		closure['vertices'].add( v[0] )
+		closure['vertices'].add( v[1] )
+		closure['edges'].add( v )
+	
+	# face closure
+	for f in fc:
+		# get the corners for the given face f
+		cns = np.where(cnt[:, 2] == f)[0]
+		# if the face does not exist in the corner table continue
+		if not len(cns):
+			continue
+		# get the vertices for the given face, column 1 in the corner table
+		v = cnt[cns, 1]
+		closure['vertices'].add( v[0] )
+		closure['vertices'].add( v[1] )
+		closure['vertices'].add( v[2] )
+		# supposing the corners are sorted, then the following edges are in the correct order
+		closure['edges'].add( (v[0], v[1]) )
+		closure['edges'].add( (v[1], v[2]) )
+		closure['edges'].add( (v[2], v[0]) )
+		# add the face to its closure
+		closure['faces'].add( f )
+	
+	return closure
+
+
+
+
+def star(cnt, vt_hash, vt=[], ed=[], fc=[])):
+	"""
+	"""
+	star = {'vertices':set(), 'edges':set(), 'faces':set()}
+	
+	# the star considering the vertex
+	# we have to consider all structures, vertices, edges, and faces
+	for v in vt:
+		# vertex star is the vertex itself
+		star['vertices'].add(v)
+		
+		# regarding edges
+		# get the corners of this vertex
+		cns = vt_hash[v]
+		# the edges are counter-clockwise oriented, so only have to get the edges
+		# leaving the corner, i.e., get the vertex of the next corner and mount the
+		# edge
+		[star['edges'].add( (v, v_next) ) for v_next in cnt[cnt[cns, 3], 1]]
+		
+		# regarding the faces that contain this vertex v
+		# already have this info on cns, the corners that have this vertex
+		[star['faces'].add( f ) for f in cnt[cns, 2]]
+
+	# the star of the edges
+	for e in ed:
+		
+		# TODO check if the vertex should be included
+		# I think so
+		star['vertices'].add( e[0] )
+		star['vertices'].add( e[1] )
+		
+		# considering that the edges are all with the same orientation, and composed by its vertices
+		star['edges'].add( e )
+		
+		# get all corners with the vertex of the edge
+		cns = [vt_hash[e[0]], vt_hash[1]]
+		# get the corner from cns[0] which the next corner is on cns[1]
+		c_next = set(cnt[cns[0], 3])
+		cn = c_next.intersection(cns[1])
+		None if len(cn) == 0 else star['faces'].add( cnt[cn.pop(), 2] )
+		# now invert cns[0] for cns[1] to get the other face
+		c_next = set(cnt[cns[1], 3])
+		cn = c_next.intersection(cns[0])
+		None if len(cn) == 0 else star['faces'].add( cnt[cn.pop(), 2] )
+		
+	# the star of the faces
+	for f in fc:
+		star['faces'].add(f)
+		
+		# TODO maybe I should split the vertex, edges, and faces code for the star in order to reuse here
+		# not necessary
+		
+		# since I dont have a index structure for the faces I need to seek in the corner table
+		cns = np.where(cnt[:,2] == f)[0]
+		vs = cnt[cns, 1]
+		
+		# add the vertex of the corners
+		[star['vertices'].add( v ) for v in vs]
+		
+		# add the edges of the face f
+		star['edges'].add( (vs[0], cnt[vs[0], 3]) )
+		star['edges'].add( (cnt[vs[0], 4], vs[0]) )
+		star['edges'].add( (cnt[vs[0], 3], cnt[vs[0], 4]) )
+		
+		# now get the surrounding faces
+		# get the faces for every opposite corner (column 5 from the corner table)
+		[star['faces'].add( cnt[c[5, 2]] ) for c in cnt[cns,:] if c[5] != -1]
+	
+	
+	return star
+
+def complement():
+	pass
+
+
+def link():
+	pass
+
+
+
+def ring(cnt, vt_hash, vt=[], ed=[], fc=[])):
+	
+	pass
+
+
+
+def intersect_face(fc, cnt, vt_hash):
+	# given a triangle, return the triangles that intersect it, vertex and edges included
+	pass
 
 
 def read_vtk(filename):
@@ -170,6 +312,8 @@ def read_vtk(filename):
 	"""
 	import csv
 	
+	# TODO modify to read the vtk format exported from paraview
+
 	f = open(filename, 'rt')
 	txt = f.readlines()
 	pts_init = 0
