@@ -216,6 +216,41 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	"""
 	star = {'vertices':set(), 'edges':set(), 'faces':set()}
 	
+	# first break the faces and edges in its constituints
+	# in order to avoid repetition, turn all structures into sets
+	vt = set(vt)
+	ed = set([frozenset(i) for i in ed])
+	fc = set(fc)
+	
+	# iterate over the faces to add its edges and vertices
+	for f in fc:
+		# get the corners, actually the lines on the corner table,
+		# that has the same face as f
+		cns = np.where(cnt[:,2] == f)[0]
+		# just to avoid error, check if there is any element on cns
+		if len(cns) == 0:
+			continue
+		# add the edges on ed set
+		ed.add( frozenset((cnt[cns[0], 1], cnt[cns[1], 1])) )
+		ed.add( frozenset((cnt[cns[0], 1], cnt[cns[2], 1])) )
+		ed.add( frozenset((cnt[cns[1], 1], cnt[cns[2], 1])) )
+		# add the vertices on vt set
+		vt.add( cnt[cns[0], 1] )
+		vt.add( cnt[cns[1], 1] )
+		vt.add( cnt[cns[2], 1] )
+	
+	# iterate over the edges to add its vertices
+	for e in ed:
+		vt.add( list(e)[0] )
+		vt.add( list(e)[1] )
+	
+	print(('vt', vt))
+	print(('ed', ed))
+	print(('fc', fc))
+	print()
+
+	# TODO since I make this break-up I may not need some further steps, review
+	
 	# the star considering the vertex
 	# we have to consider all structures, vertices, edges, and faces
 	for v in vt:
@@ -225,28 +260,33 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		# regarding edges
 		# get the corners of this vertex
 		cns = vt_hash[v]
-		# the edges are counter-clockwise oriented, so only have to get the edges
-		# leaving the corner, i.e., get the vertex of the next corner and mount the
-		# edge
+		# get the edges with vertices leaving or arriving at v
 		[star['edges'].add( frozenset((v, v_next)) ) for v_next in cnt[cnt[cns, 3], 1]]
+		[star['edges'].add( frozenset((v_prev, v)) ) for v_prev in cnt[cnt[cns, 4], 1]]
 		
 		# regarding the faces that contain this vertex v
 		# already have this info on cns, the corners that have this vertex
 		[star['faces'].add( f ) for f in cnt[cns, 2]]
 
+	print(('st_vt', star['vertices']))
+	print(('st_ed', star['edges']))
+	print(('st_fc', star['faces']))
+	print()
+	
 	# the star of the edges
 	for e in ed:
 		
-		# TODO check if the vertex should be included
-		# I think so
-		star['vertices'].add( e[0] )
-		star['vertices'].add( e[1] )
+		# include the vertex at the beginning and end of the edge
+		star['vertices'].add( list(e)[0] )
+		star['vertices'].add( list(e)[1] )
 		
 		# considering that the edges are all with the same orientation, and composed by its vertices
-		star['edges'].add( frozenset(e) )
+		# since in the beginning of the function already converted ed to a set of frozenset
+		# I can just add e here
+		star['edges'].add( e )
 		
 		# get all corners with the vertex of the edge
-		cns = [vt_hash[e[0]], vt_hash[1]]
+		cns = [vt_hash[list(e)[0]], vt_hash[1]]
 		# get the corner from cns[0] which the next corner is on cns[1]
 		c_next = set(cnt[cns[0], 3])
 		cn = c_next.intersection(cns[1])
@@ -256,6 +296,11 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		cn = c_next.intersection(cns[0])
 		None if len(cn) == 0 else star['faces'].add( cnt[cn.pop(), 2] )
 		
+	print(('st_vt', star['vertices']))
+	print(('st_ed', star['edges']))
+	print(('st_fc', star['faces']))
+	print()
+	
 	# the star of the faces
 	for f in fc:
 		star['faces'].add(f)
@@ -271,9 +316,9 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		[star['vertices'].add( v ) for v in vs]
 		
 		# add the edges of the face f
-		star['edges'].add( frozenset((vs[0], cnt[vs[0], 3])) )
-		star['edges'].add( frozenset((cnt[vs[0], 4], vs[0])) )
-		star['edges'].add( frozenset((cnt[vs[0], 3], cnt[vs[0], 4])) )
+		star['edges'].add( frozenset((vs[0], cnt[cnt[cns[0], 3], 1] )) )
+		star['edges'].add( frozenset((cnt[cnt[cns[0], 4], 1], vs[0])) )
+		star['edges'].add( frozenset((cnt[cnt[cns[0], 3], 1], cnt[cnt[cns[0], 4], 1])) )
 		
 		# now get the surrounding faces
 		# get the faces for every opposite corner (column 5 from the corner table)
