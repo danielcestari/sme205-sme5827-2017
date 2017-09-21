@@ -429,3 +429,43 @@ def read_vtk(filename):
 	fcs = np.array( list( csv.reader(txt[(pts_init + pts_size + fcs_init):(pts_init + pts_size + fcs_init + fcs_size)], delimiter=' ') ), dtype=int)
 	
 	return (pts, fcs)
+
+
+
+"""
+example
+imp.reload(cnt); cnt.plot_vtk(pp[0], pp[1][:,[1,2,3]], corner2[1])
+"""
+def plot_vtk(pts, fcs, cnt, ths=0.01):
+	from matplotlib import pyplot as plt
+	
+	# put the points into a np.array structure
+	xyz = np.array(pts)
+#	print(xyz)
+	
+	edges = np.vstack([[(f[0],f[1]), (f[1],f[2]), (f[2],f[0])] for f in fcs])
+#	print([(e[0], e[1]) for e in edges])
+	
+	# print the edges
+	[plt.plot((xyz[e[0]-1, 0], xyz[e[1]-1, 0]), (xyz[e[0]-1, 1], xyz[e[1]-1, 1]), '*--') for e in edges]
+	[plt.text(v[0], v[1], str(i+1)) for i,v in enumerate(xyz)]
+
+	# compute the faces center and plot the names
+	fcs_center = [( np.average(xyz[f -1, 0]), np.average(xyz[f -1, 1]) ) for f in fcs]
+	print(fcs_center)
+	[plt.text(f[0], f[1], str(i+1)) for i,f in enumerate(fcs_center)]
+	
+	
+	# get every corner position and pull a little bit towards the face center
+	# the threshold to pull the coordinates of the corner
+#	ths = 0.1
+	for i,c in enumerate(cnt[1:]):
+		xyz[c[1]-1, 0]
+		print(c[2])
+		fcs_center[c[2]-1][0]*ths
+	cnts_pos = [(xyz[c[1]-1, 0] + fcs_center[c[2]-1][0]*ths, xyz[c[1]-1, 1] + fcs_center[c[2]-1][1]*ths) for i,c in enumerate(cnt[1:])]
+	[plt.text(c[0], c[1], 'C%d'%(i+1)) for i,c in enumerate(cnts_pos)]
+
+	plt.show()
+	
+	
