@@ -60,15 +60,8 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[0]].append(i)
 		i += 1
-#		print(('vt_hash', vt_hash))
-#		print(('fc_hash', fc_hash))
-#		print()
 		
 		ci = cn_table[i,:]
-#		print(('i', i))
-#		print(('j', j+1 ))
-#		print(('cj', ci))
-#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i+1
 		ci[0], ci[1], ci[2] = i, fj[1], j+1
 		fc_hash[j+1].append( i )
@@ -77,15 +70,8 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[1]].append(i)
 		i += 1
-#		print(('vt_hash', vt_hash))
-#		print(('fc_hash', fc_hash))
-#		print()
 		
 		ci = cn_table[i,:]
-#		print(('i', i))
-#		print(('j', j+1 ))
-#		print(('cj', ci))
-#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i+2
 		ci[0], ci[1], ci[2] = i, fj[2], j+1
 		fc_hash[j+1].append( i )
@@ -94,20 +80,12 @@ def compute_corner_table(vertices, faces, oriented=True):
 		# add the corner to the vertex hash
 		vt_hash[fj[2]].append(i)
 #		i += 1
-#		print(('vt_hash', vt_hash))
-#		print(('fc_hash', fc_hash))
-#		print()
 		
 	i = 1
 	while i < cn_table_length:	
 #	for i in range(1, cn_table_length):
 		
 		# which face am I now ?
-#		j = 10 # need to compute this index
-		#fj = faces[j-1]
-#		print(len(cn_table))
-#		print(cn_table_length)
-#		print(i)
 		ci = cn_table[i,:]
 		corners = fc_hash[ci[2]]
 		# compute the next and previous corners for the corner_i
@@ -191,7 +169,6 @@ def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	# edge closure are the vertex that form the edge
 	# TODO To see if should consider the edges formed from the corners
 	for e in ed:
-		print(e)
 		closure['vertices'].add( list(e)[0] )
 		closure['vertices'].add( list(e)[1] )
 		closure['edges'].add( frozenset(e) )
@@ -253,10 +230,6 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		vt.add( list(e)[0] )
 		vt.add( list(e)[1] )
 	
-	print(('vt', vt))
-	print(('ed', ed))
-	print(('fc', fc))
-	print()
 
 	# TODO since I make this break-up I may not need some further steps, review
 	
@@ -277,10 +250,6 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		# already have this info on cns, the corners that have this vertex
 		[star['faces'].add( f ) for f in cnt[cns, 2]]
 
-	print(('st_vt', star['vertices']))
-	print(('st_ed', star['edges']))
-	print(('st_fc', star['faces']))
-	print()
 	
 	# the star of the edges
 	for e in ed:
@@ -304,11 +273,6 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 		c_next = set(cnt[cns[1], 3])
 		cn = c_next.intersection(cns[0])
 		None if len(cn) == 0 else star['faces'].add( cnt[cn.pop(), 2] )
-		
-	print(('st_vt', star['vertices']))
-	print(('st_ed', star['edges']))
-	print(('st_fc', star['faces']))
-	print()
 	
 	# the star of the faces
 	for f in fc:
@@ -346,15 +310,6 @@ def link(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	str = star(cnt=cnt, vt_hash=vt_hash, vt=vt, ed=ed, fc=fc)
 	cls_str = closure(cnt=cnt, vt_hash=vt_hash, vt=str['vertices'], ed=str['edges'], fc=str['faces'])
 	str_cls = star(cnt=cnt, vt_hash=vt_hash, vt=cls['vertices'], ed=cls['edges'], fc=cls['faces'])
-
-	print(('vt', vt))
-	print(('ed', ed))
-	print(('fc', fc))
-	print()
-	print(('cls', cls))
-	print(('str', str))
-	print(('cls_str', cls_str))
-	print(('str_cls', str_cls))
 
 	# perform the set difference between the closure of the and the star of the closure
 	# meaning the operation close(star(GAMMA)) \ star(close(GAMMA))
