@@ -4,6 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from grid2vtk import grid2vtk
 
+"""
+# general example
+
+ex2 = cnt.read_vtk('example2.vtk')
+
+ex2_corner = cnt.compute_corner_table(ex2[0], ex2[1][:, [1,2,3]])
+
+imp.reload(cnt); cnt.plot_vtk(ex2[0], ex2[1][:,[1,2,3]], ex2_corner[1], ths=0.4, figsize=(8,6), filename='example2.png')
+
+"""
+
+
+
 def compute_corner_table(vertices, faces, oriented=True):
 	"""
 ###
@@ -39,10 +52,6 @@ def compute_corner_table(vertices, faces, oriented=True):
 		fj = faces[j]
 		
 		ci = cn_table[i,:]
-#		print(('i', i))
-#		print(('j', j+1 ))
-#		print(('cj', ci))
-#		print(('fj', fj))
 		# assign the corner number, the vertex, and the face for the corner_i
 		ci[0], ci[1], ci[2] = i, fj[0], j+1
 		fc_hash[j+1].append( i )
@@ -327,9 +336,6 @@ def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
 	
 	return star
 
-# Dont need, python already have a builtin set difference method 
-def complement():
-	pass
 
 
 def link(cnt, vt_hash, vt=[], ed=[], fc=[]):
@@ -436,8 +442,10 @@ def read_vtk(filename):
 example
 imp.reload(cnt); cnt.plot_vtk(pp[0], pp[1][:,[1,2,3]], corner2[1])
 """
-def plot_vtk(pts, fcs, cnt, ths=0.01):
+def plot_vtk(pts, fcs, cnt, ths=0.01, figsize=(8,6), filename='./graph.png'):
 	from matplotlib import pyplot as plt
+	
+	plt.figure(figsize=figsize)
 	
 	# put the points into a np.array structure
 	xyz = np.array(pts)
@@ -447,25 +455,46 @@ def plot_vtk(pts, fcs, cnt, ths=0.01):
 #	print([(e[0], e[1]) for e in edges])
 	
 	# print the edges
-	[plt.plot((xyz[e[0]-1, 0], xyz[e[1]-1, 0]), (xyz[e[0]-1, 1], xyz[e[1]-1, 1]), '*--') for e in edges]
-	[plt.text(v[0], v[1], str(i+1)) for i,v in enumerate(xyz)]
+	[plt.plot((xyz[e[0]-1, 0], xyz[e[1]-1, 0]), (xyz[e[0]-1, 1], xyz[e[1]-1, 1]), 'r*-') for e in edges]
+	[plt.text(v[0], v[1], 'V%d'%(i+1)) for i,v in enumerate(xyz)]
 
 	# compute the faces center and plot the names
 	fcs_center = [( np.average(xyz[f -1, 0]), np.average(xyz[f -1, 1]) ) for f in fcs]
-	print(fcs_center)
-	[plt.text(f[0], f[1], str(i+1)) for i,f in enumerate(fcs_center)]
+#	print(fcs_center)
+	[plt.text(f[0], f[1], 'f%d'%(i+1)) for i,f in enumerate(fcs_center)]
 	
 	
 	# get every corner position and pull a little bit towards the face center
 	# the threshold to pull the coordinates of the corner
 #	ths = 0.1
 	for i,c in enumerate(cnt[1:]):
-		xyz[c[1]-1, 0]
-		print(c[2])
-		fcs_center[c[2]-1][0]*ths
-	cnts_pos = [(xyz[c[1]-1, 0] + fcs_center[c[2]-1][0]*ths, xyz[c[1]-1, 1] + fcs_center[c[2]-1][1]*ths) for i,c in enumerate(cnt[1:])]
-	[plt.text(c[0], c[1], 'C%d'%(i+1)) for i,c in enumerate(cnts_pos)]
+		
+#		print(('c_i', i+1, 'V', c[1], 'x', xyz[c[1]-1, 0], 'fcs_x', fcs_center[c[2]-1][0], 'y', xyz[c[1]-1, 1], 'fcs_y', fcs_center[c[2]-1][1]))
+		
+		x = xyz[c[1]-1, 0]*(1-ths) + fcs_center[c[2]-1][0]*ths
+#		if (xyz[c[1]-1, 0] > fcs_center[c[2]-1][0]):
+#			x = xyz[c[1]-1, 0]*(ths) + fcs_center[c[2]-1][0]*(1-ths)
+		
+		y = xyz[c[1]-1, 1]*(1-ths) + fcs_center[c[2]-1][1]*ths
+#		if(xyz[c[1]-1, 1] > fcs_center[c[2]-1][1]):
+#			y = xyz[c[1]-1, 1]*(ths) + fcs_center[c[2]-1][1]*(1-ths)
+#		print(c[2])
+#		x += fcs_center[c[2]-1][0]*ths if x < fcs_center[c[2]-1][0] else -fcs_center[c[2]-1][0]*ths
+#		x += -xyz[c[1]-1, 0] + (1-ths) * xyz[c[1]-1, 0]
+#		y += fcs_center[c[2]-1][1]*ths if y < fcs_center[c[2]-1][1] else -fcs_center[c[2]-1][1]*ths
+#		y += -xyz[c[1]-1, 1] + (1-ths) * xyz[c[1]-1, 1]
 
+#		print(('x_n', x, 'y_n', y))
+#		print()
+		
+		plt.text(x, y, 'C%d'%(i+1))
+		
+#		fcs_center[c[2]-1][0]*ths
+#	cnts_pos = [(xyz[c[1]-1, 0] + fcs_center[c[2]-1][0]*ths, xyz[c[1]-1, 1] + fcs_center[c[2]-1][1]*ths) for i,c in enumerate(cnt[1:])]
+#	[plt.text(c[0], c[1], 'C%d'%(i+1)) for i,c in enumerate(cnts_pos)]
+	
+	plt.savefig(filename)
+	plt.close('all')
 	plt.show()
 	
 	
