@@ -169,11 +169,14 @@ def heuristic_1(domain, k, threshold):
 			# since the curve starts at the rightmost point, I can start here with the
 			# the point located at 1/4 of the curve length and go up until 3/4 
 			# JUST EXCHANGED LEFT FOR RIGHT
-			right = [	np.array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-							np.array(domain['curve'][1][int(resolution/2):int(resolution*3/2)])]
+			right = [	np.hstack((domain['center'][0], domain['curve'][0][int(resolution/2)+1:int(resolution*3/2)-1], domain['center'][0])), 
+							np.hstack((domain['y_max_cv'], domain['curve'][1][int(resolution/2)+1:int(resolution*3/2)-1], domain['y_min_cv']))]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			left =	[np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
+			
+			print(('len(left[0])', len(left[0])))
+			print(('len(right[0])', len(right[0])))
 			
 #			print((int(resolution/2),int(resolution*3/2)))
 #			print(domain['curve'][0][int(resolution/2):int(resolution*3/2)])
@@ -193,8 +196,8 @@ def heuristic_1(domain, k, threshold):
 			bottom = (np.hstack(([xi]*n_pts_vertical, np.linspace(xi, x_divs[i+1], n_pts_horizontal))), 
 						np.hstack((np.linspace(domain['y_min_cv'], domain['y_min'], n_pts_vertical), [domain['y_min']]*n_pts_horizontal)) )
 			
-			left = [	np.array(domain['curve'][0])[range(-int(resolution/2),int(resolution/2))], 
-						np.array(domain['curve'][1])[range(-int(resolution/2),int(resolution/2))] ]
+			left = [	np.hstack((domain['center'][0], np.array(domain['curve'][0])[range(-int(resolution/2)+1,int(resolution/2)-1)], domain['center'][0])), 
+						np.hstack((domain['y_min_cv'], np.array(domain['curve'][1])[np.hstack((range(-int(resolution/2)+1, 0), range(1, int(resolution/2))))], domain['y_max_cv'])) ]
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
 			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
@@ -533,13 +536,23 @@ def generate_grid(resolution=100, left_border=1, domain_length=10, domain_height
 	borders = partitionate_domain(domain, k, heuristic, filename_borders)
 	
 	# generate the grid from the partitions
+	
 	grid = []
 	for f in range(k+1):
 		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
 						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
-						xis_rf=xis_rf, etas_rf=etas_rf, points_rf=points_rf, 
-						a_xis=a_xis, b_xis=b_xis, c_xis=c_xis, d_xis=d_xis, 
-						a_etas=a_etas, b_etas=b_etas, c_etas=c_etas, d_etas=d_etas, plot=True) )
+						xis_rf=xis_rf[f] if len(xis_rf) != 0 else [], 
+						etas_rf=etas_rf[f] if len(etas_rf) != 0 else [], 
+						points_rf=points_rf[f] if len(points_rf) != 0 else [], 
+						a_xis=a_xis[f] if len(a_xis) != 0 else [], 
+						b_xis=b_xis[f] if len(b_xis) != 0 else [], 
+						c_xis=c_xis[f] if len(c_xis) != 0 else [], 
+						d_xis=d_xis[f] if len(d_xis) != 0 else [], 
+						a_etas=a_etas[f] if len(a_etas) != 0 else [], 
+						b_etas=b_etas[f] if len(b_etas) != 0 else [], 
+						c_etas=c_etas[f] if len(c_etas) != 0 else [], 
+						d_etas=d_etas[f] if len(d_etas) != 0 else [], 
+						plot=True) )
 	
 	
 	# TODO merge the grid and generate one vtk for the whole grid
@@ -558,6 +571,11 @@ import project1 as pjt
 
 imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle')
 
+
+# with refinement parameters, both heuristics works with the same parameters
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf=[[], [1], [0], []], etas_rf=[[], [], [0.45], [0.45]], a_xis=[[], [5], [5], []], c_xis=[[], [5], [5], []], a_etas=[[], [], [7.5], [7.5]], c_etas=[[], [], [20], [20]])
+
+
 imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_2, k=3, filename_borders='circle')
 
 
@@ -569,7 +587,7 @@ nx,ny = final_grid_x[0].shape
 
 
 
-nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:]) for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i]) for i in range(nx)]; plt.show(); plt.close('all')
+nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; plt.show(); plt.close('all')
 
 
 
