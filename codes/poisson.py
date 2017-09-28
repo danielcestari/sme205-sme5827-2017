@@ -30,6 +30,9 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 
 	if (n2 != nx):
 		print("top and botton discretization should match")
+		raise Exception("top and botton discretization should match")
+		raise ValueError("top and botton discretization should match")
+		return -1
 		sys.exit(0)
 
 	rb = np.zeros((nx,2))
@@ -49,6 +52,9 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 
 	if (n2 != ny):
 		print("left and right discretization should match")
+		raise Exception("top and botton discretization should match")
+		raise ValueError("top and botton discretization should match")
+		return -1
 		sys.exit(0)
 
 	rr = np.zeros((ny,2))
@@ -123,9 +129,9 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 	
 	if plot:
 		for i in range(nx):
-			plt.plot(gridx[i,:],gridy[i,:],color='gray')
+			plt.plot(gridx[i,:],gridy[i,:], '.-', color='gray')
 		for i in range(ny):
-			plt.plot(gridx[:,i],gridy[:,i],color='gray')
+			plt.plot(gridx[:,i],gridy[:,i], '.-', color='gray')
 
 		plt.plot(rt[:,0],rt[:,1])
 		plt.plot(rb[:,0],rb[:,1])
