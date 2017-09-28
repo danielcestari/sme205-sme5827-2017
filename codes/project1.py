@@ -37,8 +37,15 @@ def generate_curve(resolution=100, left_border=1, domain_length=5, domain_height
 ###
 # Returns a tuple with x_min, x_max, y_min, y_max, curve_points
 
-# example:
-imp.reload(pjt); vv = pjt.generate_curve(100, 2, 10, 6, {'radius':1}, pjt.circle, ''); plt.plot(vv['curve'][0], vv['curve'][1], ); plt.plot([vv['center'][0]], [vv['center'][1]], '*'); plt.xlim((vv['x_min'], vv['x_max'])); plt.ylim((vv['y_min'], vv['y_max'])); plt.show(); plt.close('all')
+# Usage example:
+imp.reload(pjt)
+vv = pjt.generate_curve(100, 2, 10, 6, {'radius':1}, pjt.circle, '')
+plt.plot(vv['curve'][0], vv['curve'][1], )
+plt.plot([vv['center'][0]], [vv['center'][1]], '*')
+plt.xlim((vv['x_min'], vv['x_max']))
+plt.ylim((vv['y_min'], vv['y_max']))
+plt.show()
+plt.close('all')
 
 	"""
 	
@@ -70,23 +77,32 @@ imp.reload(pjt); vv = pjt.generate_curve(100, 2, 10, 6, {'radius':1}, pjt.circle
 def heuristic_1(domain, k, threshold):
 	"""
 ####
-#
+# Partitionate the domain and generate the borders following the heuristic 2
 ##
-#
-# 
+# domain:		Dictionary. The dictionary with the domain information, the same returned
+#				by the function generate_curve
+# k:			Integer. The number of splits to perform on the domain
+# threshold:	Number. The minimum distance between the first half of the curve and the 
+#				left border of the given partition. If the distance between the curve and the
+#				start of the domain is less than the given threshold does not perform a split
+#				before the curve. Otherwise perform a split before the curve.
 ##
+# Return a tuple were the first element is the positions where the domain
+# were split, and the second is the list of the borders for every partition
 #
+# The first heuristic turns the points on the left as the left border, and on the curve only as the right border, unless the curve is on the right, then this logic is inverse. The other points become the top and bottom borders
+
+# Usage example:
+
+
 
 	"""
 	
-	# the resolution of the grid/border is given by the number of points in the 
-	# curve
-	#resolution:		Integer. The resolution, in number of points, of each partition. Should be 
-	#					half the length of the curve
+	# the resolution of the grid/border is given by the number of points in the curve
 	resolution = len(domain['curve'][0])/2
 	
 	# the partitions are equally spaced in X
-	# the first two partitions define how much is left
+	# the first two partitions define how much of the domain is left
 	
 	# if it is not possible to have all partitions equally spaced,
 	# at least make the partition after the curve with the same principle
@@ -175,12 +191,7 @@ def heuristic_1(domain, k, threshold):
 			left =	[np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
 			
-			print(('len(left[0])', len(left[0])))
-			print(('len(right[0])', len(right[0])))
-			
-#			print((int(resolution/2),int(resolution*3/2)))
-#			print(domain['curve'][0][int(resolution/2):int(resolution*3/2)])
-			
+
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
 			
@@ -202,12 +213,10 @@ def heuristic_1(domain, k, threshold):
 			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			
-#			print((int(resolution/2),-int(resolution*3/2)))
-#			print(domain['curve'][0][int(resolution/2):-int(resolution*3/2)])
-#			print((-int(resolution*3/2),-int(resolution/2)))
-#			print(domain['curve'][0][-int(resolution*3/2):-int(resolution/2)])
 			
 		else:
+			# the rest of the domain, i.e., the partitions without the curve
+			
 			# suppose not
 			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
@@ -216,44 +225,34 @@ def heuristic_1(domain, k, threshold):
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
 			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-#		top, bottom, left, right = [], [], [], []
-		
-#		print(top)
-#		print(np.array(top).shape)
-		print()
 		
 #		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
 #		print(('border.shape', np.array(borders).shape))
-	
-	
-	
 	return (x_divs, borders)
-
-"""
-# TEST
-imp.reload(pjt); bb = pjt.heuristic_1(vv, 5, 50, 1)
-
-mm = bb[1]
-
-[[plt.plot(mm[k][i][0], mm[k][i][1]) for i in range(4)] for k in range(6)]; plt.show(); plt.close('all')
-
-
-k=0; [plt.plot(nn[k][1][i][0], nn[k][1][i][1]) for i in range(4)]; plt.show(); plt.close('all')
-
-"""
 
 
 
 def heuristic_2(domain, k, threshold):
 	"""
 ####
-#
+# Partitionate the domain and generate the borders following the heuristic 2
 ##
-#
+# domain:		Dictionary. The dictionary with the domain information, the same returned
+#				by the function generate_curve
+# k:			Integer. The number of splits to perform on the domain
+# threshold:	Number. The minimum distance between the first half of the curve and the 
+#				left border of the given partition. If the distance between the curve and the
+#				start of the domain is less than the given threshold does not perform a split
+#				before the curve. Otherwise perform a split before the curve.
 ##
+# Return a tuple were the first element is the positions where the domain
+# were split, and the second is the list of the borders for every partition
 #
+# The second heuristic create the borders fitting the points into a square, so points to the left become the left borders, to the right the right borders and so on.
+
+# Usage example:
 
 	"""
 	# TODO think in a way to reduce this case into the previous one just adjusting something
@@ -277,10 +276,7 @@ def heuristic_2(domain, k, threshold):
 
 
 	
-	# the resolution of the grid/border is given by the number of points in the 
-	# curve
-	#resolution:		Integer. The resolution, in number of points, of each partition. Should be 
-	#					half the length of the curve
+	# the resolution of the grid/border is given by the number of points in the curve
 	resolution = len(domain['curve'][0])/2
 	
 	# the partitions are equally spaced in X
@@ -334,7 +330,6 @@ def heuristic_2(domain, k, threshold):
 	
 	# to avoid roundoff errors of the index, reassign resolution
 	resolution = int(resolution//4)*8
-	print(('resolution', resolution))
 	
 	# the grid generation has to follow the orientation left to right for the top and bottom
 	# borders,
@@ -360,14 +355,11 @@ def heuristic_2(domain, k, threshold):
 			
 			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
 			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
+			# since the curve starts at the rightmost point, I can start here with the
+			# the point located at 1/4 of the curve length and go up until 3/4 
+			# JUST EXCHANGED LEFT FOR RIGHT
 			left = [	np.array([xi]*int(resolution/4)*4), np.linspace(domain['y_min'], domain['y_max'], int(resolution/4)*4)]
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			print(('len(right)', len(domain['curve'][0][int(resolution/2)+1:int(resolution*3/2)-1])))
-			print((('int(resolution/4)', int(resolution/4))))
-			print(('a)', int(resolution/2)))
-			print(('b)', int(resolution*3/2)))
-			print(('C', np.array([x_divs[i+1]]*int(resolution/4)).shape))
-			print(('D', np.array(domain['curve'][0])[ range(int(resolution*3/4)-1, int(resolution/4)-1,-1)].shape))
 			right = [	np.hstack((
 							np.array([x_divs[i+1]]*int(resolution/4+1)),
 #							np.array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
@@ -381,27 +373,7 @@ def heuristic_2(domain, k, threshold):
 							np.linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4)),
 						))
 					]
-#			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			
-			
-#			top = [	np.hstack((np.linspace(xi, x_divs[i+1], n_pts_horizontal), [x_divs[i+1]]*n_pts_vertical)), 
-#					np.hstack(([domain['y_max']]*n_pts_horizontal, np.linspace(domain['y_max'], domain['y_max_cv'], n_pts_vertical))) ]
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			
-#			bottom = (np.hstack((np.linspace(xi, x_divs[i+1], n_pts_horizontal), [x_divs[i+1]]*n_pts_vertical)), 
-#						np.hstack(([domain['y_min']]*n_pts_horizontal, np.linspace(domain['y_min'], domain['y_min_cv'], n_pts_vertical))) )
-			
-			# since the curve starts at the rightmost point, I can start here with the
-			# the point located at 1/4 of the curve length and go up until 3/4 
-			# JUST EXCHANGED LEFT FOR RIGHT
-#			right = [	np.array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-#							np.array(domain['curve'][1][int(resolution/2):int(resolution*3/2)])]
-#			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-#			left =	[np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
-#			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			
-#			print((int(resolution/2),int(resolution*3/2)))
-#			print(domain['curve'][0][int(resolution/2):int(resolution*3/2)])
 			
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
@@ -430,26 +402,9 @@ def heuristic_2(domain, k, threshold):
 					]
 
 			
-#			top = [	np.hstack(([xi]*n_pts_vertical, np.linspace(xi, x_divs[i+1], n_pts_horizontal))), 
-#					np.hstack((np.linspace(domain['y_max_cv'], domain['y_max'], n_pts_vertical), [domain['y_max']]*n_pts_horizontal)) ]
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			
-			
-#			bottom = (np.hstack(([xi]*n_pts_vertical, np.linspace(xi, x_divs[i+1], n_pts_horizontal))), 
-#						np.hstack((np.linspace(domain['y_min_cv'], domain['y_min'], n_pts_vertical), [domain['y_min']]*n_pts_horizontal)) )
-			
-#			left = [	np.array(domain['curve'][0])[range(-int(resolution/2),int(resolution/2))], 
-#						np.array(domain['curve'][1])[range(-int(resolution/2),int(resolution/2))] ]
-#			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-#			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
-#			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-			
-#			print((int(resolution/2),-int(resolution*3/2)))
-#			print(domain['curve'][0][int(resolution/2):-int(resolution*3/2)])
-#			print((-int(resolution*3/2),-int(resolution/2)))
-#			print(domain['curve'][0][-int(resolution*3/2):-int(resolution/2)])
-			
 		else:
+			# the rest of the domain, i.e., the partitions without the curve
+			
 			# suppose not
 			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
 			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
@@ -457,31 +412,32 @@ def heuristic_2(domain, k, threshold):
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
 			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-#		top, bottom, left, right = [], [], [], []
-		
-#		print(top)
-#		print(np.array(top).shape)
-		print()
 		
 #		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
 #		print(('border.shape', np.array(borders).shape))
-	
-	
-	
 	return (x_divs, borders)
-	pass
+
 
 
 def partitionate_domain(domain, k, heuristic, filename=''):
 	"""
 ####
-# 
+# Partitionate the domain, generate the borders, and save to file all partitions
 ###
-# 
-###
-# 
+# domain:		Dictionary. The dictionary with the domain information, the same returned
+#				by the function generate_curve
+# k:			Integer. The number of splits to perform on the domain
+# heuristic:	Function. The function that split the domain and generate the border.
+#				See docstring for function heuristic_1 and heuristic_2 for more details.
+# filename:		String. An identifier of the execution, used to name the files saved
+##
+# Return the list of the borders for every partition, and saves to file the borders
+
+
+
+
 	"""
 	# depending on the space between the leftmost point of the curve to the left border
 	# generate the first partition on the middle of the curve, without a "blank" partition
@@ -526,42 +482,53 @@ def generate_grid(resolution=100, left_border=1, domain_length=10, domain_height
 					iter_number=100, xis_rf=[], etas_rf=[], points_rf=[], 
 					a_xis=[], b_xis=[], c_xis=[], d_xis=[], 
 					a_etas=[], b_etas=[], c_etas=[], d_etas=[], plot=False):
-	import poisson
-	
-	# load or create the curve
-	domain = generate_curve(resolution, left_border, domain_length, domain_height, 
-					curve_params, equation, filename_curve)
-	
-	# partitionate the domain and create the borders
-	borders = partitionate_domain(domain, k, heuristic, filename_borders)
-	
-	# generate the grid from the partitions
-	
-	grid = []
-	for f in range(k+1):
-		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
-						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
-						xis_rf=xis_rf[f] if len(xis_rf) != 0 else [], 
-						etas_rf=etas_rf[f] if len(etas_rf) != 0 else [], 
-						points_rf=points_rf[f] if len(points_rf) != 0 else [], 
-						a_xis=a_xis[f] if len(a_xis) != 0 else [], 
-						b_xis=b_xis[f] if len(b_xis) != 0 else [], 
-						c_xis=c_xis[f] if len(c_xis) != 0 else [], 
-						d_xis=d_xis[f] if len(d_xis) != 0 else [], 
-						a_etas=a_etas[f] if len(a_etas) != 0 else [], 
-						b_etas=b_etas[f] if len(b_etas) != 0 else [], 
-						c_etas=c_etas[f] if len(c_etas) != 0 else [], 
-						d_etas=d_etas[f] if len(d_etas) != 0 else [], 
-						plot=True) )
-	
-	
-	# TODO merge the grid and generate one vtk for the whole grid
-	
-	
-	return grid
-	
-"""
-# usage example
+	"""
+####
+# Generate the grid for a given configuration
+###
+
+# Parameters regarding the curve generation
+# resolution:			Integer. The number of points in the curve
+# left_border:			Number. The rightmost x point
+# domain_length:		Number. The total length of the domain
+# domain_height:		Number. The total height of the domain
+# curve_params:			Dictionary. Other parameters used for generating the curve
+# equation:				Function. The function that apply the curve function
+# filename_curve:		String. The filename from which the curve will be read from
+
+# Parameters regarding the domain partition and borders creation
+# domain:				Dictionary. The dictionary with the domain information, the same returned
+#						by the function generate_curve
+# k:					Integer. The number of splits to perform on the domain
+# heuristic:			Function. The function that split the domain and generate the border.
+#						See docstring for function heuristic_1 and heuristic_2 for more details.
+# filename_borders:		String. An identifier of the execution, used to name the files saved
+
+# Parameters related to the Poisson's equation, i.e., grid generation
+# iter_number:			Integer. Number of iterations to solve the Poisson's equation
+# xis_rf:				List. The list with the positions on xi to refine the grid
+# etas_rf:				List. The list with the positions on eta to refine the grid
+# points_rf:			List. The list with the points to refine the grid
+# a_xis:				List. Parameter a in the TTM method to refine the grid, related to xi
+# b_xis:				List. Parameter b in the TTM method to refine the grid, related to xi
+# c_xis:				List. Parameter c in the TTM method to refine the grid, related to xi
+# d_xis:				List. Parameter d in the TTM method to refine the grid, related to xi
+# a_etas:				List. Parameter a in the TTM method to refine the grid, related to eta
+# b_etas:				List. Parameter b in the TTM method to refine the grid, related to eta
+# c_etas:				List. Parameter c in the TTM method to refine the grid, related to eta
+# d_etas:				List. Parameter d in the TTM method to refine the grid, related to eta
+
+# plot:					Boolean. True to use matplotlib to plot the grids generated, for the
+#						partitions and for the grid as a whole
+
+
+###
+# Returns a tuple with the grids generated, a list with the grid for every partition, 
+# and the tuple's second element is the grid as a whole, all grid merged together
+# Also generate the VTK for every partition and for the whole grid, saves all to file
+
+
+# Usage example:
 
 import imp
 import numpy as np
@@ -588,9 +555,66 @@ nx,ny = final_grid_x[0].shape
 
 
 nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; plt.show(); plt.close('all')
+	"""
+	import poisson
+	
+	# load or create the curve
+	domain = generate_curve(resolution, left_border, domain_length, domain_height, 
+					curve_params, equation, filename_curve)
+	
+	# partitionate the domain and create the borders
+	borders = partitionate_domain(domain, k, heuristic, filename_borders)
+	
+	# generate the grid from the partitions
+	
+	grid = []
+	for f in range(k+1):
+		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
+						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
+						xis_rf=xis_rf[f] if len(xis_rf) != 0 else [], 
+						etas_rf=etas_rf[f] if len(etas_rf) != 0 else [], 
+						points_rf=points_rf[f] if len(points_rf) != 0 else [], 
+						a_xis=a_xis[f] if len(a_xis) != 0 else [], 
+						b_xis=b_xis[f] if len(b_xis) != 0 else [], 
+						c_xis=c_xis[f] if len(c_xis) != 0 else [], 
+						d_xis=d_xis[f] if len(d_xis) != 0 else [], 
+						a_etas=a_etas[f] if len(a_etas) != 0 else [], 
+						b_etas=b_etas[f] if len(b_etas) != 0 else [], 
+						c_etas=c_etas[f] if len(c_etas) != 0 else [], 
+						d_etas=d_etas[f] if len(d_etas) != 0 else [], 
+						plot=plot) )
+	
+	# TODO check if the vtk is ok, it does not seem so
+	
+	# merging the grids into one
+	grid = np.array(grid)
+#	print((grid[0].shape[2]))
+#	print(grid.shape)
+#	np.hstack(grid[:, 0, 0, :]) 
+	final_grid = np.array((	
+					[np.hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
+					[np.hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
+					))
+#	final_grid = np.array(( np.vstack(grid[:, 0, :, :]), np.vstack(grid[:, 1, :, :]) ))
 
+#	final_grid_y = np.array(( np.hstack(grid[:, 0, :, :]).transpose(), np.hstack(grid[:, 1, :, :]).transpose() ))
+	
+	print(final_grid.shape)
+#	print(final_grid_y.shape)
+	
+	NULL, nx,ny = final_grid.shape
+#	[plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; 
+#	[plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid[0][:,i], final_grid[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid[0][i,:], final_grid[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
 
-
-
-
-"""
+	# ATTENTION there is an error in here
+	# create the vtk for the whole grid
+	from grid2vtk import grid2vtk
+	grid2vtk(final_grid[0], final_grid[1], '%s_final.vtk'%filename_borders)
+	
+	
+#	return (grid, final_grid_x, final_grid_y)
+	return (grid, final_grid)
+	
