@@ -1,5 +1,5 @@
 
-import sys
+import sys, imp
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -479,9 +479,14 @@ imp.reload(pjt); vv=pjt.generate_curve(100, 2, 10, 5, {'radius':1}, pjt.circle, 
 def generate_grid(resolution=100, left_border=1, domain_length=10, domain_height=4, 
 					curve_params={'radius':1}, equation=circle, filename_curve='',
 					heuristic=heuristic_1, k=4, filename_borders='circle',
-					iter_number=100, xis_rf=[], etas_rf=[], points_rf=[], 
-					a_xis=[], b_xis=[], c_xis=[], d_xis=[], 
-					a_etas=[], b_etas=[], c_etas=[], d_etas=[], plot=False):
+					iter_number=100, 
+					xis_rf0=[], etas_rf0=[], points_rf0=[], 
+					a_xis0=[], b_xis0=[], c_xis0=[], d_xis0=[], 
+					a_etas0=[], b_etas0=[], c_etas0=[], d_etas0=[], 
+					xis_rf1=[], etas_rf1=[], points_rf1=[], 
+					a_xis1=[], b_xis1=[], c_xis1=[], d_xis1=[], 
+					a_etas1=[], b_etas1=[], c_etas1=[], d_etas1=[], 
+					plot=False):
 	"""
 ####
 # Generate the grid for a given configuration
@@ -506,17 +511,32 @@ def generate_grid(resolution=100, left_border=1, domain_length=10, domain_height
 
 # Parameters related to the Poisson's equation, i.e., grid generation
 # iter_number:			Integer. Number of iterations to solve the Poisson's equation
-# xis_rf:				List. The list with the positions on xi to refine the grid
-# etas_rf:				List. The list with the positions on eta to refine the grid
-# points_rf:			List. The list with the points to refine the grid
-# a_xis:				List. Parameter a in the TTM method to refine the grid, related to xi
-# b_xis:				List. Parameter b in the TTM method to refine the grid, related to xi
-# c_xis:				List. Parameter c in the TTM method to refine the grid, related to xi
-# d_xis:				List. Parameter d in the TTM method to refine the grid, related to xi
-# a_etas:				List. Parameter a in the TTM method to refine the grid, related to eta
-# b_etas:				List. Parameter b in the TTM method to refine the grid, related to eta
-# c_etas:				List. Parameter c in the TTM method to refine the grid, related to eta
-# d_etas:				List. Parameter d in the TTM method to refine the grid, related to eta
+
+# Refinement parameters of the first half of the grid
+# xis_rf0:				List. The list with the positions on xi to refine the grid
+# etas_rf0:				List. The list with the positions on eta to refine the grid
+# points_rf0:			List. The list with the points to refine the grid
+# a_xis0:				List. Parameter a in the TTM method to refine the grid, related to xi
+# b_xis0:				List. Parameter b in the TTM method to refine the grid, related to xi
+# c_xis0:				List. Parameter c in the TTM method to refine the grid, related to xi
+# d_xis0:				List. Parameter d in the TTM method to refine the grid, related to xi
+# a_etas0:				List. Parameter a in the TTM method to refine the grid, related to eta
+# b_etas0:				List. Parameter b in the TTM method to refine the grid, related to eta
+# c_etas0:				List. Parameter c in the TTM method to refine the grid, related to eta
+# d_etas0:				List. Parameter d in the TTM method to refine the grid, related to eta
+
+# Refinement parameters of the second half of the grid
+# xis_rf1:				List. The list with the positions on xi to refine the grid
+# etas_rf1:				List. The list with the positions on eta to refine the grid
+# points_rf1:			List. The list with the points to refine the grid
+# a_xis1:				List. Parameter a in the TTM method to refine the grid, related to xi
+# b_xis1:				List. Parameter b in the TTM method to refine the grid, related to xi
+# c_xis1:				List. Parameter c in the TTM method to refine the grid, related to xi
+# d_xis1:				List. Parameter d in the TTM method to refine the grid, related to xi
+# a_etas1:				List. Parameter a in the TTM method to refine the grid, related to eta
+# b_etas1:				List. Parameter b in the TTM method to refine the grid, related to eta
+# c_etas1:				List. Parameter c in the TTM method to refine the grid, related to eta
+# d_etas1:				List. Parameter d in the TTM method to refine the grid, related to eta
 
 # plot:					Boolean. True to use matplotlib to plot the grids generated, for the
 #						partitions and for the grid as a whole
@@ -540,7 +560,10 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain
 
 
 # with refinement parameters, both heuristics works with the same parameters
-imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf=[[], [1], [0], []], etas_rf=[[], [], [0.45], [0.45]], a_xis=[[], [5], [5], []], c_xis=[[], [5], [5], []], a_etas=[[], [], [7.5], [7.5]], c_etas=[[], [], [20], [20]])
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+
+
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[7.5], c_etas1=[20])
 
 
 imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_2, k=3, filename_borders='circle')
@@ -557,6 +580,7 @@ nx,ny = final_grid_x[0].shape
 nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; plt.show(); plt.close('all')
 	"""
 	import poisson
+	imp.reload(poisson)
 	
 	# load or create the curve
 	domain = generate_curve(resolution, left_border, domain_length, domain_height, 
@@ -569,6 +593,8 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	
 	grid = []
 	for f in range(k+1):
+		# TODO do not refine now, only refine after the whole grid is merged together	
+		"""
 		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
 						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
 						xis_rf=xis_rf[f] if len(xis_rf) != 0 else [], 
@@ -583,14 +609,35 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 						c_etas=c_etas[f] if len(c_etas) != 0 else [], 
 						d_etas=d_etas[f] if len(d_etas) != 0 else [], 
 						plot=plot) )
+		"""
+		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
+						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
+						xis_rf=[], etas_rf=[], points_rf=[], 
+						a_xis=[], b_xis=[], c_xis=[], d_xis=[], 
+						a_etas=[], b_etas=[], c_etas=[], d_etas=[], 
+						plot=plot) )
 	
-	# TODO check if the vtk is ok, it does not seem so
 	
 	# merging the grids into one
 	grid = np.array(grid)
 #	print((grid[0].shape[2]))
-#	print(grid.shape)
+	print(('grid.shape', grid.shape))
 #	np.hstack(grid[:, 0, 0, :]) 
+	threshold = abs(domain['x_min_cv'] - domain['center'][0])
+	id_half = 2 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 1
+	split_grid = np.array(( 
+					np.array((	
+						[np.hstack(grid[:id_half, 0, i, :]) for i in range(grid[0].shape[2])] ,
+						[np.hstack(grid[:id_half, 1, i, :]) for i in range(grid[0].shape[2])]
+					)),
+					np.array((	
+						[np.hstack(grid[id_half:, 0, i, :]) for i in range(grid[0].shape[2])] ,
+						[np.hstack(grid[id_half:, 1, i, :]) for i in range(grid[0].shape[2])]
+					))
+				))
+	print(('split_grid', split_grid.shape))
+	
+	
 	final_grid = np.array((	
 					[np.hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
 					[np.hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
@@ -599,20 +646,145 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 
 #	final_grid_y = np.array(( np.hstack(grid[:, 0, :, :]).transpose(), np.hstack(grid[:, 1, :, :]).transpose() ))
 	
+	# TODO check if the vtk is ok, it does not seem so
+	# I think the only solution is to work with two halves of the grid
+	# before the hole, i.e., the curve, and after
+	
+	# get the index of the position of the center of the curve, where the grid should be split
+	threshold = abs(domain['x_min_cv'] - domain['center'][0])
+	id_half = final_grid.shape[1]
+	id_half *= 3 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 2
+	
+	
+	
 	print(final_grid.shape)
 #	print(final_grid_y.shape)
 	
 	NULL, nx,ny = final_grid.shape
 #	[plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; 
 #	[plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(final_grid[0][:,i], final_grid[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid[0][i,:], final_grid[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	
+	"""
+	[plt.plot(final_grid[0][:,i][:id_half], final_grid[1][:,i][:id_half], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid[0][:,i][id_half:], final_grid[1][:,i][id_half:], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid[0][i,:][:id_half], final_grid[1][i,:][:id_half], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid[0][i,:][id_half:], final_grid[1][i,:][id_half:], '.-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
+	"""
+	NULL, nx,ny = split_grid[0].shape
+	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
+	NULL, nx,ny = split_grid[1].shape
+	[plt.plot(split_grid[0][0][i,:], split_grid[0][1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(split_grid[1][0][i,:], split_grid[1][1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	
+	
+	#TODO apply the refinement but now for the whole grid, actually the first half
+	final_grid1 = poisson.grid(filename='%s_final_refined.txt'%(filename_borders), 
+						save_file='%s_final_refined.vtk'%(filename_borders), 
+						iter_number=iter_number, 
+						xis_rf=xis_rf0 if len(xis_rf0) != 0 else [], 
+						etas_rf=etas_rf0 if len(etas_rf0) != 0 else [], 
+						points_rf=points_rf0 if len(points_rf0) != 0 else [], 
+						a_xis=a_xis0 if len(a_xis0) != 0 else [], 
+						b_xis=b_xis0 if len(b_xis0) != 0 else [], 
+						c_xis=c_xis0 if len(c_xis0) != 0 else [], 
+						d_xis=d_xis0 if len(d_xis0) != 0 else [], 
+						a_etas=a_etas0 if len(a_etas0) != 0 else [], 
+						b_etas=b_etas0 if len(b_etas0) != 0 else [], 
+						c_etas=c_etas0 if len(c_etas0) != 0 else [], 
+						d_etas=d_etas0 if len(d_etas0) != 0 else [], 
+						plot=plot, 
+						comp_grid=(split_grid[0][0], split_grid[0][1])) 
+	
+	
+	#TODO apply the refinement but now for the whole grid, actually the second half
+	final_grid2 = poisson.grid(filename='%s_final_refined.txt'%(filename_borders), 
+						save_file='%s_final_refined.vtk'%(filename_borders), 
+						iter_number=iter_number, 
+						xis_rf=xis_rf1 if len(xis_rf1) != 0 else [], 
+						etas_rf=etas_rf1 if len(etas_rf1) != 0 else [], 
+						points_rf=points_rf1 if len(points_rf1) != 0 else [], 
+						a_xis=a_xis1 if len(a_xis1) != 0 else [], 
+						b_xis=b_xis1 if len(b_xis1) != 0 else [], 
+						c_xis=c_xis1 if len(c_xis1) != 0 else [], 
+						d_xis=d_xis1 if len(d_xis1) != 0 else [], 
+						a_etas=a_etas1 if len(a_etas1) != 0 else [], 
+						b_etas=b_etas1 if len(b_etas1) != 0 else [], 
+						c_etas=c_etas1 if len(c_etas1) != 0 else [], 
+						d_etas=d_etas1 if len(d_etas1) != 0 else [], 
+						plot=plot, 
+						comp_grid=(split_grid[1][0], split_grid[1][1])) 
+	
+	NULL, nx,ny = split_grid[0].shape
+	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	NULL, nx,ny = split_grid[1].shape
+	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	"""
+	# TODO smooth the borders on the interface between halves, only the y (eta) values
+	mask = [True] * final_grid1[1].shape[0]
+	mask = [False if j in domain['curve'][1] else mask[i] for i, j in enumerate( final_grid1[1][:, -1] )]
+	mask = [False if j in domain['curve'][1] else mask[i] for i, j in enumerate( final_grid2[1][:, 0] )]
+	print(('mask', mask))
+	print()
+	avg = np.average( np.array(( final_grid1[1][:, -2], final_grid2[1][:, 1] )), axis=0)
+	final_grid1[1][:, -1] = avg
+	final_grid2[1][:, 0] = avg
+	print(('final_grid1[1].shape',final_grid1[1].shape))
+	print(('final_grid2[1].shape',final_grid2[1].shape))
+	print(('avg.shape', avg.shape))
+	print(('np.average(avg).shape', np.average(avg).shape))
+	print()
+	print(('np.average(avg, axis=0)', np.average(avg, axis=0)))
+	print()
+	print(('final_grid1[1][:,-2]',final_grid1[1][:,-2]))
+	print()
+	print(('final_grid2[1][:,1]',final_grid2[1][:,1]))
+	
 
+	NULL, nx,ny = split_grid[0].shape
+	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	NULL, nx,ny = split_grid[1].shape
+	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	"""
+
+	"""
+	NULL, nx,ny = split_grid[0].shape
+	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
+	NULL, nx,ny = split_grid[1].shape
+	[plt.plot(split_grid[0][0][i,:], split_grid[0][1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(split_grid[1][0][i,:], split_grid[1][1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	"""
+	"""
+	nx,ny = final_grid1[0].shape
+#	[plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; 
+#	[plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	nx,ny = final_grid2[0].shape
+	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	"""
+	
+	# TODO modify grid2vtk to receive two halves and properly create one vtk
+	
 	# ATTENTION there is an error in here
 	# create the vtk for the whole grid
-	from grid2vtk import grid2vtk
-	grid2vtk(final_grid[0], final_grid[1], '%s_final.vtk'%filename_borders)
+	#from grid2vtk import grid2vtk
+	import grid2vtk as g2vtk
+	imp.reload(g2vtk)
+#	grid2vtk(final_grid[0], final_grid[1], '%s_final.vtk'%filename_borders)
+	g2vtk.grid2vtk([final_grid1[0], final_grid2[0]], [final_grid1[1], final_grid2[1]], '%s_final.vtk'%filename_borders)
 	
 	
 #	return (grid, final_grid_x, final_grid_y)

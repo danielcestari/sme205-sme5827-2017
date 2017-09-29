@@ -3,10 +3,12 @@
 
 # In[24]:
 
-import sys
+import sys, imp
 import numpy as np
 import matplotlib.pyplot as plt
-from grid2vtk import grid2vtk
+#from grid2vtk import grid2vtk
+import grid2vtk as g2vtk
+imp.reload(g2vtk)
 #get_ipython().magic('matplotlib inline')
 
 
@@ -15,77 +17,82 @@ from grid2vtk import grid2vtk
 
 def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf, 
 			a_xis, b_xis, c_xis, d_xis, 
-			a_etas, b_etas, c_etas, d_etas, plot=False):
+			a_etas, b_etas, c_etas, d_etas, comp_grid=[], plot=False):
+	
+	if len(comp_grid) != 0:
+		gridx, gridy = comp_grid
+		ny, nx = gridx.shape
+		dx, dy = 1.0/nx, 1.0/ny
+	else:
+		f = open(filename,'rt')
 
-	f = open(filename,'rt')
+		nx = int(f.readline())
+		rt = np.zeros((nx,2))
+		for i in range(nx):
+			l=f.readline()
+			rt[i,0]=l.split(' ')[0]
+			rt[i,1]=l.split(' ')[1]
 
-	nx = int(f.readline())
-	rt = np.zeros((nx,2))
-	for i in range(nx):
-		l=f.readline()
-		rt[i,0]=l.split(' ')[0]
-		rt[i,1]=l.split(' ')[1]
+		n2 = int(f.readline())
 
-	n2 = int(f.readline())
+		if (n2 != nx):
+			print("top and botton discretization should match")
+			raise Exception("top and botton discretization should match")
+			raise ValueError("top and botton discretization should match")
+			return -1
+			sys.exit(0)
 
-	if (n2 != nx):
-		print("top and botton discretization should match")
-		raise Exception("top and botton discretization should match")
-		raise ValueError("top and botton discretization should match")
-		return -1
-		sys.exit(0)
+		rb = np.zeros((nx,2))
+		for i in range(nx):
+			l=f.readline()
+			rb[i,0]=l.split(' ')[0]
+			rb[i,1]=l.split(' ')[1]
 
-	rb = np.zeros((nx,2))
-	for i in range(nx):
-		l=f.readline()
-		rb[i,0]=l.split(' ')[0]
-		rb[i,1]=l.split(' ')[1]
+		ny = int(f.readline())
+		rl = np.zeros((ny,2))
+		for i in range(ny):
+			l=f.readline()
+			rl[i,0]=l.split(' ')[0]
+			rl[i,1]=l.split(' ')[1]
 
-	ny = int(f.readline())
-	rl = np.zeros((ny,2))
-	for i in range(ny):
-		l=f.readline()
-		rl[i,0]=l.split(' ')[0]
-		rl[i,1]=l.split(' ')[1]
+		n2 = int(f.readline())
 
-	n2 = int(f.readline())
+		if (n2 != ny):
+			print("left and right discretization should match")
+			raise Exception("top and botton discretization should match")
+			raise ValueError("top and botton discretization should match")
+			return -1
+			sys.exit(0)
 
-	if (n2 != ny):
-		print("left and right discretization should match")
-		raise Exception("top and botton discretization should match")
-		raise ValueError("top and botton discretization should match")
-		return -1
-		sys.exit(0)
+		rr = np.zeros((ny,2))
+		for i in range(ny):
+			l=f.readline()
+			rr[i,0]=l.split(' ')[0]
+			rr[i,1]=l.split(' ')[1]
 
-	rr = np.zeros((ny,2))
-	for i in range(ny):
-		l=f.readline()
-		rr[i,0]=l.split(' ')[0]
-		rr[i,1]=l.split(' ')[1]
+		f.close()
 
-	f.close()
+		gridx = np.zeros((ny,nx))
+		gridy = np.zeros((ny,nx))
 
-	gridx = np.zeros((ny,nx))
-	gridy = np.zeros((ny,nx))
+		gridx[0,:]=rb[:,0]
+		gridx[ny-1,:]=rt[:,0]
+		gridx[:,0]=rl[:,0]
+		gridx[:,nx-1]=rr[:,0]
 
-	gridx[0,:]=rb[:,0]
-	gridx[ny-1,:]=rt[:,0]
-	gridx[:,0]=rl[:,0]
-	gridx[:,nx-1]=rr[:,0]
-
-	gridy[0,:]=rb[:,1]
-	gridy[ny-1,:]=rt[:,1]
-	gridy[:,0]=rl[:,1]
-	gridy[:,ny-1]=rr[:,1]
-
-	dx = 1.0/nx
-	dy = 1.0/ny
-	for j in range(1,ny-1):
-		for i in range(1,nx-1):
-			idx = i*dx
-			jdy = j*dy
-			gridx[j,i] = (1.0-idx)*rl[j,0] + idx*rr[j,0] + (1.0 - jdy)*rb[i,0] + jdy*rt[i,0] - (1.0-idx)*(1.0-jdy)*rb[0,0] - (1.0 - idx)*jdy*rt[0,0] - idx*(1.0-jdy)*rb[nx-1,0] - idx*jdy*rt[nx-1,0]
-			gridy[j,i] = (1.0-idx)*rl[j,1] + idx*rr[j,1] + (1.0 - jdy)*rb[i,1] + jdy*rt[i,1] - (1.0-idx)*(1.0-jdy)*rb[0,1] - (1.0 - idx)*jdy*rt[0,1] - idx*(1.0-jdy)*rb[nx-1,1] - idx*jdy*rt[nx-1,1]
+		gridy[0,:]=rb[:,1]
+		gridy[ny-1,:]=rt[:,1]
+		gridy[:,0]=rl[:,1]
+		gridy[:,ny-1]=rr[:,1]
+		
+		dx = 1.0/nx
+		dy = 1.0/ny
+		for j in range(1,ny-1):
+			for i in range(1,nx-1):
+				idx = i*dx
+				jdy = j*dy
+				gridx[j,i] = (1.0-idx)*rl[j,0] + idx*rr[j,0] + (1.0 - jdy)*rb[i,0] + jdy*rt[i,0] - (1.0-idx)*(1.0-jdy)*rb[0,0] - (1.0 - idx)*jdy*rt[0,0] - idx*(1.0-jdy)*rb[nx-1,0] - idx*jdy*rt[nx-1,0]
+				gridy[j,i] = (1.0-idx)*rl[j,1] + idx*rr[j,1] + (1.0 - jdy)*rb[i,1] + jdy*rt[i,1] - (1.0-idx)*(1.0-jdy)*rb[0,1] - (1.0 - idx)*jdy*rt[0,1] - idx*(1.0-jdy)*rb[nx-1,1] - idx*jdy*rt[nx-1,1]
 
 	dxi = 1.0/nx
 	deta = 1.0/ny
@@ -124,8 +131,11 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 				Gy = g*(P*dydxi+Q*dydeta)
 				gridx[j,i] = (1.0/(2*(a+c)))*(-4.0*Gx*dxi**2*deta**2+a*(gridx[j,i+1]+gridx[j,i-1])+c*(gridx[j+1,i]+gridx[j-1,i])-0.5*(b*(gridx[j+1,i+1]+gridx[j-1,i-1]-gridx[j+1,i-1]-gridx[j-1,i+1])))
 				gridy[j,i] = (1.0/(2*(a+c)))*(-4.0*Gy*dxi**2*deta**2+a*(gridy[j,i+1]+gridy[j,i-1])+c*(gridy[j+1,i]+gridy[j-1,i])-0.5*(b*(gridy[j+1,i+1]+gridy[j-1,i-1]-gridy[j+1,i-1]-gridy[j-1,i+1])))
-
-	grid2vtk(gridx,gridy, save_file)
+	
+	
+	print(('POISSON'))
+	print(('gridx.shape', gridx.shape))
+	g2vtk.grid2vtk([gridx],[gridy], save_file)
 	
 	if plot:
 		for i in range(nx):
