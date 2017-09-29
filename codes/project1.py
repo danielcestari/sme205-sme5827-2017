@@ -655,7 +655,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	
 	
 	# apply the refinement but for the first half
-	final_grid1 = poisson.grid(filename=''), 
+	final_grid1 = poisson.grid(filename='', 
 						save_file='%s_final_refined_1.vtk'%(filename_borders), 
 						iter_number=iter_number, 
 						xis_rf=xis_rf0 if len(xis_rf0) != 0 else [], 
