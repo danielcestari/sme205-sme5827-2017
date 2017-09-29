@@ -593,23 +593,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	
 	grid = []
 	for f in range(k+1):
-		# TODO do not refine now, only refine after the whole grid is merged together	
-		"""
-		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
-						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
-						xis_rf=xis_rf[f] if len(xis_rf) != 0 else [], 
-						etas_rf=etas_rf[f] if len(etas_rf) != 0 else [], 
-						points_rf=points_rf[f] if len(points_rf) != 0 else [], 
-						a_xis=a_xis[f] if len(a_xis) != 0 else [], 
-						b_xis=b_xis[f] if len(b_xis) != 0 else [], 
-						c_xis=c_xis[f] if len(c_xis) != 0 else [], 
-						d_xis=d_xis[f] if len(d_xis) != 0 else [], 
-						a_etas=a_etas[f] if len(a_etas) != 0 else [], 
-						b_etas=b_etas[f] if len(b_etas) != 0 else [], 
-						c_etas=c_etas[f] if len(c_etas) != 0 else [], 
-						d_etas=d_etas[f] if len(d_etas) != 0 else [], 
-						plot=plot) )
-		"""
+		# do not refine now, only refine after the two final grid parts are finished	
 		grid.append( poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
 						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
 						xis_rf=[], etas_rf=[], points_rf=[], 
@@ -618,7 +602,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 						plot=plot) )
 	
 	
-	# merging the grids into one
+	# merging the grids into two parts
 	grid = np.array(grid)
 #	print((grid[0].shape[2]))
 	print(('grid.shape', grid.shape))
@@ -660,17 +644,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	print(final_grid.shape)
 #	print(final_grid_y.shape)
 	
-	NULL, nx,ny = final_grid.shape
-#	[plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; 
-#	[plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; 
-	
-	"""
-	[plt.plot(final_grid[0][:,i][:id_half], final_grid[1][:,i][:id_half], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid[0][:,i][id_half:], final_grid[1][:,i][id_half:], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid[0][i,:][:id_half], final_grid[1][i,:][:id_half], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(final_grid[0][i,:][id_half:], final_grid[1][i,:][id_half:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	"""
+	# plotting the two halves before the refinement
 	NULL, nx,ny = split_grid[0].shape
 	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
 	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
@@ -680,9 +654,9 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	plt.show(); plt.close('all')
 	
 	
-	#TODO apply the refinement but now for the whole grid, actually the first half
-	final_grid1 = poisson.grid(filename='%s_final_refined.txt'%(filename_borders), 
-						save_file='%s_final_refined.vtk'%(filename_borders), 
+	# apply the refinement but for the first half
+	final_grid1 = poisson.grid(filename=''), 
+						save_file='%s_final_refined_1.vtk'%(filename_borders), 
 						iter_number=iter_number, 
 						xis_rf=xis_rf0 if len(xis_rf0) != 0 else [], 
 						etas_rf=etas_rf0 if len(etas_rf0) != 0 else [], 
@@ -699,9 +673,9 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 						comp_grid=(split_grid[0][0], split_grid[0][1])) 
 	
 	
-	#TODO apply the refinement but now for the whole grid, actually the second half
-	final_grid2 = poisson.grid(filename='%s_final_refined.txt'%(filename_borders), 
-						save_file='%s_final_refined.vtk'%(filename_borders), 
+	# apply the refinement but for the second half
+	final_grid2 = poisson.grid(filename='', 
+						save_file='%s_final_refined_2.vtk'%(filename_borders), 
 						iter_number=iter_number, 
 						xis_rf=xis_rf1 if len(xis_rf1) != 0 else [], 
 						etas_rf=etas_rf1 if len(etas_rf1) != 0 else [], 
@@ -717,6 +691,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 						plot=plot, 
 						comp_grid=(split_grid[1][0], split_grid[1][1])) 
 	
+	# plotting the two halves after the refinement
 	NULL, nx,ny = split_grid[0].shape
 	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
 	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
@@ -724,6 +699,7 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
 	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
+	
 	"""
 	# TODO smooth the borders on the interface between halves, only the y (eta) values
 	mask = [True] * final_grid1[1].shape[0]
@@ -754,33 +730,9 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
 	"""
-
-	"""
-	NULL, nx,ny = split_grid[0].shape
-	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
-	NULL, nx,ny = split_grid[1].shape
-	[plt.plot(split_grid[0][0][i,:], split_grid[0][1][i,:], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(split_grid[1][0][i,:], split_grid[1][1][i,:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	"""
-	"""
-	nx,ny = final_grid1[0].shape
-#	[plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; 
-#	[plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	nx,ny = final_grid2[0].shape
-	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	"""
 	
-	# TODO modify grid2vtk to receive two halves and properly create one vtk
+	# modify grid2vtk to receive two halves, acutally can be several parts, and properly create one vtk
 	
-	# ATTENTION there is an error in here
-	# create the vtk for the whole grid
-	#from grid2vtk import grid2vtk
 	import grid2vtk as g2vtk
 	imp.reload(g2vtk)
 #	grid2vtk(final_grid[0], final_grid[1], '%s_final.vtk'%filename_borders)
@@ -788,5 +740,5 @@ nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][
 	
 	
 #	return (grid, final_grid_x, final_grid_y)
-	return (grid, final_grid)
+	return (grid, final_grid1, final_grid2)
 	
