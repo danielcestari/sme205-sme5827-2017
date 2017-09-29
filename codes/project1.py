@@ -25,7 +25,7 @@ def generate_curve(resolution=100, left_border=1, domain_length=5, domain_height
 					curve_params={'radius':1}, equation=circle, filename=''):
 	"""
 ####
-# Generate the profile of a give curve
+# Generate the profile of a given curve
 ###
 # resolution:		Integer. The number of points in the curve
 # left_border:		Number. The rightmost x point
@@ -435,7 +435,10 @@ def partitionate_domain(domain, k, heuristic, filename=''):
 ##
 # Return the list of the borders for every partition, and saves to file the borders
 
+# Usage example:
 
+
+imp.reload(pjt); vv=pjt.generate_curve(100, 2, 10, 5, {'radius':1}, pjt.circle, ''); k=4; bb = pjt.heuristic_1(vv, k, 2); mm=bb[1]; [[plt.plot(mm[xk][i][0], mm[xk][i][1], '*') for i in range(4)] for xk in range(k)]; plt.show(); plt.close('all')
 
 
 	"""
@@ -467,13 +470,6 @@ def partitionate_domain(domain, k, heuristic, filename=''):
 	return borders
 	
 
-
-"""
-# complete example so far
-
-imp.reload(pjt); vv=pjt.generate_curve(100, 2, 10, 5, {'radius':1}, pjt.circle, ''); k=4; bb = pjt.heuristic_1(vv, k, 2); mm=bb[1]; [[plt.plot(mm[xk][i][0], mm[xk][i][1], '*') for i in range(4)] for xk in range(k)]; plt.show(); plt.close('all')
-
-"""
 
 
 def generate_grid(resolution=100, left_border=1, domain_length=10, domain_height=4, 
@@ -556,17 +552,17 @@ from matplotlib import pyplot as plt
 import project1 as pjt
 
 
-imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle')
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle")
 
 
 # with refinement parameters, both heuristics works with the same parameters
-imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle", xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
 
 
-imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_1, k=3, filename_borders='circle', xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[7.5], c_etas1=[20])
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle", xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[7.5], c_etas1=[20])
 
 
-imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={'radius':1}, equation=pjt.circle, filename_curve='', heuristic=pjt.heuristic_2, k=3, filename_borders='circle')
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle")
 
 
 # merging the grids into one
@@ -577,7 +573,7 @@ nx,ny = final_grid_x[0].shape
 
 
 
-nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], '.-', color='gray') for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], '.-', color='gray') for i in range(nx)]; plt.show(); plt.close('all')
+nx,ny = final_grid_x[0].shape; [plt.plot(final_grid_x[0][i, :], final_grid_x[1][i,:], ".-", color="gray") for i in range(nx)]; [plt.plot(final_grid_y[0][:,i], final_grid_y[1][:,i], ".-", color="gray") for i in range(nx)]; plt.show(); plt.close("all")
 	"""
 	import poisson
 	imp.reload(poisson)

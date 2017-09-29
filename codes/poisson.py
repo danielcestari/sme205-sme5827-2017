@@ -133,8 +133,6 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 				gridy[j,i] = (1.0/(2*(a+c)))*(-4.0*Gy*dxi**2*deta**2+a*(gridy[j,i+1]+gridy[j,i-1])+c*(gridy[j+1,i]+gridy[j-1,i])-0.5*(b*(gridy[j+1,i+1]+gridy[j-1,i-1]-gridy[j+1,i-1]-gridy[j-1,i+1])))
 	
 	
-	print(('POISSON'))
-	print(('gridx.shape', gridx.shape))
 	g2vtk.grid2vtk([gridx],[gridy], save_file)
 	
 	if plot:
