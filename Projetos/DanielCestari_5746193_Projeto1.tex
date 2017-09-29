@@ -4,6 +4,8 @@
 \usepackage[utf8x]{inputenc}
 \usepackage[T1]{fontenc}
 
+\usepackage{float}
+
 \usepackage{listings}
 \usepackage{pythonhighlight}
 
@@ -46,7 +48,7 @@ Basicamente o código está dividido em 3 partes:
 	\item \textbf{Particionamento do domínio e determinação dos bordos}: Basicamente o particionamento do domínio tem apenas duas restrições, dividir a curva no meio e realizar um número $k+1$ de partições ($k$ é o parâmetro passado que determina quantos pontos de quebra o eixo $x$ tem).
 	Foram implementadas duas maneiras de determinação dos bordos, chamadas de heurística 1 e 2.
 	
-	\item \textbf{Geração da malha}: Esta é a única etapa que utiliza código já implementado dos exercícios práticos. Após as várias partições serem geradas, cada uma têm sua malha gerada resolvendo a equação de \textit{Poisson} e ao final são unidas em uma única malha.
+	\item \textbf{Geração da malha}: Esta é a única etapa que utiliza código já implementado dos exercícios práticos. Após as várias partições serem geradas, cada uma têm sua malha gerada resolvendo a equação de \textit{Laplace} e ao final são unidas em duas malhas que são refinadas na região desejada.
 	
 \end{itemize}
 
@@ -77,12 +79,12 @@ A função \textit{generate\_curve} retorna um dicionário com os pontos que def
 
 \subsection{Particionamento do domínio e determinação dos bordos}
 
-A função \textit{partitionate\_domain} chama das funções que realizam o particionamento e determinação dos bordos, \textit{heuristic\_1} e \textit{heuristic\_2}. Para a reutilização do código que resolve a equação de \textit{Poisson} cada partição é salva em arquivo, e essa função que salva cada partição em arquivo.
+A função \textit{partitionate\_domain} chama as funções que realizam o particionamento e determinação dos bordos, \textit{heuristic\_1} e \textit{heuristic\_2}. Para a reutilização do código que resolve a equação de \textit{Laplace} cada partição é salva em arquivo, e essa função que salva cada partição em arquivo.
 Abaixo é mostrada a função.
 
 %%%%%%%%%%%%%%%%%%%%
 % def partitionate_domain
-\inputpython{project1.py}{483}{517}
+\inputpython{project1.py}{424}{470}
 %%%%%%%%%%%%%%%%%%%%
 
 A diferença entre as duas heurísticas está na divisão feita sobre as partições que contém o círculo.
@@ -109,7 +111,7 @@ As figuras \ref{fig:heuristic1_top1} e \ref{fig:heuristic1_top2} mostram as malh
 
 %%%%%%%%%%%%%%%%%%%%
 % def heuristic_1
-\inputpython{project1.py}{77}{239}
+\inputpython{project1.py}{77}{233}
 %%%%%%%%%%%%%%%%%%%%
 
 
@@ -137,13 +139,13 @@ As figuras \ref{fig:heuristic2_top1} e \ref{fig:heuristic2_top2} mostram malhas 
 
 %%%%%%%%%%%%%%%%%%%%
 % def heuristic_2
-\inputpython{project1.py}{256}{480}
+\inputpython{project1.py}{237}{420}
 %%%%%%%%%%%%%%%%%%%%
 
 
 \subsection{Geração da malha}
 
-A função que gera a malha chama as funções que criam o domínio e o particionam, e depois resolve a equação de \textit{Poisson} em cada partição individualmente.
+A função que gera a malha chama as funções que criam o domínio e o particionam, e depois resolve a equação de \textit{Laplace} em cada partição individualmente. Após a malha de cada partição ser gerada, elas são unidas em duas malhas e então o refinamento é realizado resolvendo a equação de \textit{Poisson} nas duas malhas finais. 
 
 Essa é a principal função que chama todas as outras necessárias, e por isso é cheia de parâmetros. Todos descritos na \textit{docstring}, basicamente juntou todos os parâmetros das funções anteriores mais os parâmetros relativos ao refinamento da malha.
 
@@ -151,19 +153,194 @@ Abaixo é apresentada a função \textit{generate\_grid}.
 
 %%%%%%%%%%%%%%%%%%%%
 % def generate_grid
-\inputpython{project1.py}{529}{574}
+\inputpython{project1.py}{475}{740}
 %%%%%%%%%%%%%%%%%%%%
 
-
+O arquivo \textit{VTK} final é o resultado da união das duas malhas finais refinadas. Foi preciso modificar o código original que gerava o \textit{VTK} para receber uma lista de malhas e quando salvar em disco, produzir apenas um arquivo.
 
 
 \section{Resultados}
 
-% mostrar os vários processo
-as duas heurísticas com e sem refinamento
-depois o aerofólio nas duas heurísticas, com e sem refinamento também
+
+Nesta seção serão apresentados os resultados obtidos com a implementação descrita anteriormente. Primeiro serão mostradas as malhas para a heurística 1 variando o número de pontos na malha, em seguida será feito o mesmo para a heurística 2.
+A configuração do domínio e da curva será a mesma para ambas as heurísticas.
+
+Também utilizarei como curva o perfil do aerofólio definido no arquivo \textit{naca012.txt}.
 
 
+
+\subsection{Heurística 1}
+
+Código para gerar uma malha com 50 pontos nos bordos esquerdo e direito. Curva gerada com 50 pontos, centrada na origem, domínio com comprimento 10, altura 8, e comprimento 3 à direita da curva. O domínio é divido em 4 partes, e o refinamento é feito ao redor da curva e após a curva no centro do domínio em relação à \textit{y}, ou $\eta$.
+
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, 
+domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
+filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle_h1_50pts", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+Abaixo o código agora utilizando 100 pontos.
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, 
+domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
+filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle_h1_100pts", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_1_50pts.png}
+	\label{fig:heuristic1_50pts} 
+	\caption[caption]{Malha gerada pela heurística 1 com 50 pontos sem refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_1_100pts.png}
+	\label{fig:heuristic1_100pts} 
+	\caption[caption]{Malha gerada pela heurística 1 com 100 pontos sem refinamento.}
+\end{figure}
+
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_1_50pts_refined.png}
+	\label{fig:heuristic1_50pts_refined} 
+	\caption[caption]{Malha gerada pela heurística 1 com 50 pontos com refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_1_100pts_refined.png}
+	\label{fig:heuristic1_100pts_refined} 
+	\caption[caption]{Malha gerada pela heurística 1 com 100 pontos com refinamento.}
+\end{figure}
+
+
+
+
+
+
+\subsection{Heurística 2}
+
+
+
+Código para gerar uma malha com 25 pontos nos bordos esquerdo e direito. Curva gerada com 25 pontos, centrada na origem, domínio com comprimento 10, altura 8, e comprimento 3 à direita da curva. O domínio é divido em 4 partes, e o refinamento é feito ao redor da curva e após a curva no centro do domínio em relação à \textit{y}, ou $\eta$.
+
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(resolution=25, left_border=3, domain_length=10, 
+domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
+filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle_h2_25pts", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+Abaixo o código agora utilizando 50 pontos.
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, 
+domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
+filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle_h2_50pts", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.4], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts.png}
+	\label{fig:heuristic2_50pts} 
+	\caption[caption]{Malha gerada pela heurística 2 com 25 pontos sem refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_2_50pts.png}
+	\label{fig:heuristic2_100pts} 
+	\caption[caption]{Malha gerada pela heurística 2 com 50 pontos sem refinamento.}
+\end{figure}
+
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts_refined.png}
+	\label{fig:heuristic2_50pts_refined} 
+	\caption[caption]{Malha gerada pela heurística 2 com 25 pontos com refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{heuristica_2_50pts_refined.png}
+	\label{fig:heuristic2_100pts_refined} 
+	\caption[caption]{Malha gerada pela heurística 2 com 50 pontos com refinamento.}
+\end{figure}
+
+
+
+\subsection{Aerofólio}
+
+Código para gerar uma malha para a curva \textit{naca012}, a resolução da malha é determinada pela quantidade de pontos na curva. O domínio com comprimento 4, altura 6, e comprimento 1 à direita da curva. O domínio é divido em 4 partes, e o refinamento é feito ao redor da curva e após a curva no centro do domínio em relação à \textit{y}, ou $\eta$.
+
+
+Código utilizando a heurística 1.
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(filename_curve="naca012.txt", 
+left_border=1, domain_length=4, domain_height=3,
+heuristic=pjt.heuristic_1, k=3, filename_borders="naca012_h1", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.419], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+Código utilizando a heurística 2.
+\begin{verbatim}
+imp.reload(pjt);  
+grid = pjt.generate_grid(filename_curve="naca012.txt", 
+left_border=1, domain_length=4, domain_height=3,
+heuristic=pjt.heuristic_2, k=3, filename_borders="naca_h2", 
+xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.419], a_xis0=[5], 
+a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[5], c_etas1=[15])
+\end{verbatim}
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{naca_h1.png}
+	\label{fig:naca_h1} 
+	\caption[caption]{Malha gerada para a curva \textit{naca012 } pela heurística 1 sem refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{naca_h2.png}
+	\label{fig:naca_h2} 
+	\caption[caption]{Malha gerada para a curva \textit{naca012 } pela heurística 2 sem refinamento.}
+\end{figure}
+
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{naca_h1_refined.png}
+	\label{fig:naca_h1_refined} 
+	\caption[caption]{Malha gerada para a curva \textit{naca012 } pela heurística 1 com refinamento.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{naca_h2_refined.png}
+	\label{fig:naca_h2_refined} 
+	\caption[caption]{Malha gerada para a curva \textit{naca012 } pela heurística 2 com refinamento.}
+\end{figure}
 
 
 
