@@ -1,6 +1,7 @@
 
 import sys, imp
 import numpy as np
+from numpy import linspace, hstack, vstack, array, average, cos, sin, pi, sqrt
 from matplotlib import pyplot as plt
 
 
@@ -15,8 +16,8 @@ def circle(resolution, center, radius):
 ###
 # Return a tuple with two arrays (x,y) 
 	"""
-	t = np.linspace(start=0, stop=2*np.pi, num=resolution)
-	return np.array((radius*np.cos(t) + center[0], radius*np.sin(t) + center[1]))
+	t = linspace(start=0, stop=2*pi, num=resolution +1)[:-1]
+	return array((radius*cos(t) + center[0], radius*sin(t) + center[1]))
 
 
 
@@ -58,10 +59,10 @@ plt.close('all')
 		f = open(filename, 'rt')
 		curve = [i.split(' ') for i in f.read().splitlines()]
 		curve = [(float(i[0]), float(i[-1])) for i in curve]
-		curve = np.array(([i[0] for i in curve], [i[1] for i in curve]))
+		curve = array(([i[0] for i in curve], [i[1] for i in curve]))
 	else:
 		curve = equation(resolution, (0,0), **curve_params)
-	center = ( np.average(curve[0]), np.average(curve[1]))
+	center = ( average(curve[0]), average(curve[1]))
 	cv_x_min, cv_x_max = min(curve[0]), max(curve[0])
 	cv_y_min, cv_y_max = min(curve[1]), max(curve[1])
 	
@@ -134,8 +135,8 @@ def heuristic_1(domain, k, threshold):
 	x_divs.append( x_divs[-1] + abs(x_divs[-1] - x_divs[-2]) )
 	
 	# the remaining of the domain is equally divided
-	x_divs.append( np.linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
-	x_divs = np.hstack(x_divs)
+	x_divs.append( linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
+	x_divs = hstack(x_divs)
 	
 	# the convention of the borders on the curve, first half, is
 	# the left border of the partition is the normal one and the right 
@@ -159,6 +160,12 @@ def heuristic_1(domain, k, threshold):
 	# this is because of the code used to generate the grid, if this orientation is not
 	# followed the generated grid becames twisted
 	
+	# function used to refine the borders
+	def refine(x0, x1, t, func=lambda x: 1*sqrt(x)):
+		return x1 + func(t)*(x0-x1)
+	# the parameter used to refine the borders
+	t = linspace(0, 1, resolution)
+	
 	# the order of the borders is top, bottom, left, right
 	for i, xi in enumerate(x_divs[:-1]):
 		# CHECK if we are dealing with the curve partition
@@ -168,68 +175,120 @@ def heuristic_1(domain, k, threshold):
 		reverse_ids = list(range(resolution))
 		reverse_ids.reverse()
 		
+		
+		# compute the number of points in the horizontal and vertical paths
+		n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution *1.0)
+		n_pts_vertical = resolution - n_pts_horizontal
+		
 		if (x_divs[i+1] == domain['center'][0]):
 			# the first half of the curve
 			
-			# compute the number of points in the horizontal and vertical paths
-			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
-			n_pts_vertical = resolution - n_pts_horizontal
 			
-			top = [	np.hstack((np.linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
-					np.hstack(([domain['y_max']]*n_pts_horizontal, np.linspace(domain['y_max'], domain['y_max_cv'], n_pts_vertical))) ]
+			top = [	hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical )),
+					hstack(([domain['y_max']]*n_pts_horizontal, refine(domain['y_max_cv'], domain['y_max'], linspace(0,1,n_pts_vertical)))) ]
+			bottom = [hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical )),
+					hstack(([domain['y_min']]*n_pts_horizontal, refine(domain['y_min_cv'], domain['y_min'], linspace(0,1,n_pts_vertical)))) ]
+#			"""
+			print(('H1'))
+			print((top, len(top[0]), len(top[1])))
+			print((bottom, len(bottom[0]), len(bottom[1])))
+			print(('top.shape', array(top).shape))
+			print(('bottom.shape', array(bottom).shape))
+			print((n_pts_horizontal, n_pts_vertical))
+#			"""
+
+
+
+			
+#			top = [	hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
+#					hstack(([domain['y_max']]*n_pts_horizontal, linspace(domain['y_max'], domain['y_max_cv'], n_pts_vertical))) ]
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
 			
-			bottom = (np.hstack((np.linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
-						np.hstack(([domain['y_min']]*n_pts_horizontal, np.linspace(domain['y_min'], domain['y_min_cv'], n_pts_vertical))) )
+#			bottom = (hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
+#						hstack(([domain['y_min']]*n_pts_horizontal, linspace(domain['y_min'], domain['y_min_cv'], n_pts_vertical))) )
 			
 			# since the curve starts at the rightmost point, I can start here with the
 			# the point located at 1/4 of the curve length and go up until 3/4 
 			# JUST EXCHANGED LEFT FOR RIGHT
-			right = [	np.hstack((domain['center'][0], domain['curve'][0][int(resolution/2)+1:int(resolution*3/2)-1], domain['center'][0])), 
-							np.hstack((domain['y_max_cv'], domain['curve'][1][int(resolution/2)+1:int(resolution*3/2)-1], domain['y_min_cv']))]
+			right = [	hstack((domain['center'][0], domain['curve'][0][int(resolution/2)+1:int(resolution*3/2)-1], domain['center'][0])), 
+							hstack((domain['y_max_cv'], domain['curve'][1][int(resolution/2)+1:int(resolution*3/2)-1], domain['y_min_cv']))]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-			left =	[np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
+			left =	[array([xi]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
 			
 
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
 			
+			
+			top = [	hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
+					hstack((refine(domain['y_max_cv'], domain['y_max'], linspace(1,0,n_pts_vertical)), [domain['y_max']]*n_pts_horizontal )) ]
+			bottom = [hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
+					hstack((refine(domain['y_min_cv'], domain['y_min'], linspace(1,0,n_pts_vertical)), [domain['y_min']]*n_pts_horizontal )) ]
+
+
+			"""
 			# compute the number of points in the horizontal and vertical paths
 			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
 			n_pts_vertical = resolution - n_pts_horizontal
 			
-			top = [	np.hstack(([xi]*n_pts_vertical, np.linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
-					np.hstack((np.linspace(domain['y_max_cv'], domain['y_max'], n_pts_vertical), [domain['y_max']]*n_pts_horizontal)) ]
+			top = [	hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
+					hstack((linspace(domain['y_max_cv'], domain['y_max'], n_pts_vertical), [domain['y_max']]*n_pts_horizontal)) ]
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
 			
 			
-			bottom = (np.hstack(([xi]*n_pts_vertical, np.linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
-						np.hstack((np.linspace(domain['y_min_cv'], domain['y_min'], n_pts_vertical), [domain['y_min']]*n_pts_horizontal)) )
+			bottom = (hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
+						hstack((linspace(domain['y_min_cv'], domain['y_min'], n_pts_vertical), [domain['y_min']]*n_pts_horizontal)) )
+			"""
 			
-			left = [	np.hstack((domain['center'][0], np.array(domain['curve'][0])[range(-int(resolution/2)+1,int(resolution/2)-1)], domain['center'][0])), 
-						np.hstack((domain['y_min_cv'], np.array(domain['curve'][1])[np.hstack((range(-int(resolution/2)+1, 0), range(1, int(resolution/2))))], domain['y_max_cv'])) ]
+			left = [	hstack((domain['center'][0], array(domain['curve'][0])[range(-int(resolution/2)+1,int(resolution/2)-1)], domain['center'][0])), 
+						hstack((domain['y_min_cv'], array(domain['curve'][1])[hstack((range(-int(resolution/2)+1, 0), range(1, int(resolution/2))))], domain['y_max_cv'])) ]
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
+			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			
+			res = resolution
+			res_refined = int(0.8*res)
+			res_coarse = int((res - res_refined)/2)
+			right = [	array([x_divs[i+1]]*res), 
+						hstack(( linspace(domain['y_min'], domain['y_min_cv'], res_coarse +1)[:-1],
+						linspace(domain['y_min_cv'], domain['y_max_cv'], res_refined), 
+						linspace(domain['y_max_cv'], domain['y_max'], res_coarse +1)[1:] ))
+					]
 			
 		else:
 			# the rest of the domain, i.e., the partitions without the curve
 			
-			# suppose not
-			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
+			# TODO adjust the resolution of the first partition to have the same "density"
+			res = int(resolution*(x_divs[i+1]-xi)/(x_divs[-1] - x_divs[-2]))
+			res = resolution
+			top = [linspace(xi, x_divs[i+1], res), array([domain['y_max']]*res)]
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
-			left = [np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
-			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
-			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
+			bottom = (linspace(xi, x_divs[i+1], res), [domain['y_min']]*res)
+			
+			# in case this is not the first partition, then refine the borders on the left and right
+			if i == 0:
+				left = [array([xi]*res), linspace(domain['y_min'], domain['y_max'], res)]
+				right = [array([x_divs[i+1]]*res), linspace(domain['y_min'], domain['y_max'], res)]
+			else:
+				res_refined = int(0.8*res)
+				res_coarse = int((res - res_refined)/2)
+				left = [	array([xi]*res), 
+							hstack(( linspace(domain['y_min'], domain['y_min_cv'], res_coarse +1)[:-1],
+							linspace(domain['y_min_cv'], domain['y_max_cv'], res_refined), 
+							linspace(domain['y_max_cv'], domain['y_max'], res_coarse +1)[1:] ))
+						]
+				right = [	array([x_divs[i+1]]*res), 
+							hstack(( linspace(domain['y_min'], domain['y_min_cv'], res_coarse +1)[:-1],
+							linspace(domain['y_min_cv'], domain['y_max_cv'], res_refined), 
+							linspace(domain['y_max_cv'], domain['y_max'], res_coarse +1)[1:] ))
+						]
+#				right = [array([x_divs[i+1]]*res), linspace(domain['y_min'], domain['y_max'], res)]
 		
 #		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
-#		print(('border.shape', np.array(borders).shape))
+#		print(('border.shape', array(borders).shape))
 	return (x_divs, borders)
 
 
@@ -312,8 +371,8 @@ def heuristic_2(domain, k, threshold):
 	x_divs.append( x_divs[-1] + abs(x_divs[-1] - x_divs[-2]) )
 	
 	# the remaining of the domain is equally divided
-	x_divs.append( np.linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
-	x_divs = np.hstack(x_divs)
+	x_divs.append( linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
+	x_divs = hstack(x_divs)
 	
 	# the convention of the borders on the curve, first half, is
 	# the left border of the partition is the normal one and the right 
@@ -353,29 +412,29 @@ def heuristic_2(domain, k, threshold):
 			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
 			n_pts_vertical = resolution - n_pts_horizontal
 			
-			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
-			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
+			top = [linspace(xi, x_divs[i+1], resolution), array([domain['y_max']]*resolution)]
+			bottom = (linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
 			# since the curve starts at the rightmost point, I can start here with the
 			# the point located at 1/4 of the curve length and go up until 3/4 
 			# JUST EXCHANGED LEFT FOR RIGHT
-			left = [	np.array([xi]*int(resolution/4)*4), np.linspace(domain['y_min'], domain['y_max'], int(resolution/4)*4 )]
+			left = [	array([xi]*int(resolution/4)*4), linspace(domain['y_min'], domain['y_max'], int(resolution/4)*4 )]
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = [	np.hstack((
-							np.array([x_divs[i+1]]*(int(resolution/4) +1)),
-#							np.array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-							np.array(domain['curve'][0])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
-							np.array([x_divs[i+1]]*(int(resolution/4) +1)),
+			right = [	hstack((
+							array([x_divs[i+1]]*(int(resolution/4) +1)),
+#							array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
+							array(domain['curve'][0])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
+							array([x_divs[i+1]]*(int(resolution/4) +1)),
 						)),
-						np.hstack((
-							np.linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
-#							np.array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
-							np.array(domain['curve'][1])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
-							np.linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
+						hstack((
+							linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
+#							array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
+							array(domain['curve'][1])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
+							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
 						))
 					]
 			print()
-			print((np.array(left).shape))
-			print((np.array(right).shape))
+			print((array(left).shape))
+			print((array(right).shape))
 			print()
 			
 		elif (xi == domain['center'][0]):
@@ -386,21 +445,21 @@ def heuristic_2(domain, k, threshold):
 			n_pts_vertical = resolution - n_pts_horizontal
 
 
-			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
-			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
-			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_min'], domain['y_max'], resolution)]
+			top = [linspace(xi, x_divs[i+1], resolution), array([domain['y_max']]*resolution)]
+			bottom = (linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
+			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_min'], domain['y_max'], resolution)]
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			left = [	np.hstack((
-							np.array([xi]*int(resolution/4+1)),
-#							np.array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-							np.array(domain['curve'][0])[ np.hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
-							np.array([xi]*(int(resolution/4) +1)),
+			left = [	hstack((
+							array([xi]*int(resolution/4+1)),
+#							array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
+							array(domain['curve'][0])[ hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
+							array([xi]*(int(resolution/4) +1)),
 						)),
-						np.hstack((
-							np.linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
-#							np.array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
-							np.array(domain['curve'][1])[ np.hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
-							np.linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
+						hstack((
+							linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
+#							array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
+							array(domain['curve'][1])[ hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
+							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
 						))
 					]
 
@@ -409,17 +468,17 @@ def heuristic_2(domain, k, threshold):
 			# the rest of the domain, i.e., the partitions without the curve
 			
 			# suppose not
-			top = [np.linspace(xi, x_divs[i+1], resolution), np.array([domain['y_max']]*resolution)]
-			bottom = (np.linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
-			left = [np.array([xi]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
+			top = [linspace(xi, x_divs[i+1], resolution), array([domain['y_max']]*resolution)]
+			bottom = (linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
+			left = [array([xi]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = [np.array([x_divs[i+1]]*resolution), np.linspace(domain['y_max'], domain['y_min'], resolution)]
+			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 		
 #		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
-#		print(('border.shape', np.array(borders).shape))
+#		print(('border.shape', array(borders).shape))
 	return (x_divs, borders)
 
 
@@ -485,8 +544,8 @@ def heuristic_3(domain, k, threshold):
 	x_divs.append( x_divs[-1] + abs(x_divs[-1] - x_divs[-2]) )
 	
 	# the remaining of the domain is equally divided
-	x_divs.append( np.linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
-	x_divs = np.hstack(x_divs)
+	x_divs.append( linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
+	x_divs = hstack(x_divs)
 	
 	# the convention of the borders on the curve, first half, is
 	# the left border of the partition is the normal one and the right 
@@ -526,80 +585,85 @@ def heuristic_3(domain, k, threshold):
 			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
 			n_pts_vertical = resolution - n_pts_horizontal
 			
-			top = np.array([	
+			top = array([	
 					[x_divs[i+1]]*(resolution),
-					np.linspace(domain['y_max'], domain['y_max_cv'], resolution+1)[:-1]
+					linspace(domain['y_max'], domain['y_max_cv'], resolution+0)[:]
 					])
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = np.array([	
+			bottom = array([	
 					[x_divs[i+1]]*(resolution),
-					np.linspace(domain['y_min'], domain['y_min_cv'], resolution+1)[:-1]
+					linspace(domain['y_min'], domain['y_min_cv'], resolution+0)[:]
 					])
 			
-			right = np.array([
-					domain['curve'][0][range(int(resolution*3/2) -1, (int(resolution/2) -1), -1)],
-					domain['curve'][1][range(int(resolution*3/2) -1, (int(resolution/2) -1), -1)]
+			right = array([
+					domain['curve'][0][range(int(resolution*3/2) -0, (int(resolution/2) -0), -3)],
+					domain['curve'][1][range(int(resolution*3/2) -0, (int(resolution/2) -0), -3)]
 					])
 			
-			left = np.array([
-					np.hstack((	np.linspace(domain['center'][0], xi, resolution/3 +1)[:-1], 
+			left = array([
+					hstack((	#linspace(domain['center'][0], xi, resolution/3 +1)[:-1], 
 								[xi]*int(resolution/3),
-								np.linspace(xi, domain['center'][0], resolution/3 +1)[1:]
+								#linspace(xi, domain['center'][0], resolution/3 +1)[1:]
 					)),
-					np.hstack((	[domain['y_min']]*int(resolution/3),
-								np.linspace(domain['y_min'], domain['y_max'], resolution/3 ),
-								[domain['y_max']]*int(resolution/3),
+					hstack((	#[domain['y_min']]*int(resolution/3),
+								linspace(domain['y_min'], domain['y_max'], resolution/3 ),
+								#[domain['y_max']]*int(resolution/3),
 					)),
 					])
 			print(('1'))
 			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
 			print(('bottom[0].shape', bottom[0].shape, 'bottom[1].shape', bottom[1].shape, ))
 			print(('right[0].shape', right[0].shape, 'right[1].shape', right[1].shape, ))
+			print(('right', right))
 			print(('left[0].shape', left[0].shape, 'left[1].shape', left[1].shape, ))
+			print(('left', left))
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
 			
-			top = np.array([	
+			top = array([	
 					[xi]*(resolution),
-					np.linspace(domain['y_max_cv'], domain['y_max'], resolution+1)[:-1]
+					linspace(domain['y_max_cv'], domain['y_max'], resolution+0)[:]
 					])
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = np.array([	
+			bottom = array([	
 					[xi]*(resolution),
-					np.linspace(domain['y_min_cv'], domain['y_min'], resolution+1)[:-1]
+					linspace(domain['y_min_cv'], domain['y_min'], resolution+0)[:]
 					])
 			
-			left = np.array([
-					np.hstack((domain['curve'][0][range(int(resolution*3/2), resolution*2)], domain['curve'][0][range(1, int(resolution/2) +1)])), 
-					np.hstack((domain['curve'][1][range(int(resolution*3/2), resolution*2)], domain['curve'][1][range(1, int(resolution/2) +1)])), 
+			left = array([
+					hstack((domain['curve'][0][range(int(resolution*3/2), resolution*2, 3)], domain['curve'][0][range(1, int(resolution/2) +1, 3)])), 
+					hstack((domain['curve'][1][range(int(resolution*3/2), resolution*2, 3)], domain['curve'][1][range(1, int(resolution/2) +1, 3)])), 
 					])
 			
-			right = np.array([
-					np.hstack((	np.linspace(xi, x_divs[i+1], resolution/3 ), 
+			right = array([
+					hstack((	#linspace(xi, x_divs[i+1], resolution/3 ), 
 								[x_divs[i+1]]*int(resolution/3),
-								np.linspace(x_divs[i+1], xi, resolution/3 )
+								#linspace(x_divs[i+1], xi, resolution/3 )
 					)),
-					np.hstack((	[domain['y_min']]*int(resolution/3),
-								np.linspace(domain['y_min'], domain['y_max'], resolution/3 +2)[1:-1],
-								[domain['y_max']]*int(resolution/3),
+					hstack((	#[domain['y_min']]*int(resolution/3),
+								linspace(domain['y_min'], domain['y_max'], resolution/3 +0)[:],
+								#[domain['y_max']]*int(resolution/3),
 					)),
 					])
 			print(('2'))
+			print(domain)
 			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
 			print(('bottom[0].shape', bottom[0].shape, 'bottom[1].shape', bottom[1].shape, ))
 			print(('right[0].shape', right[0].shape, 'right[1].shape', right[1].shape, ))
+			print(('right', right))
 			print(('left[0].shape', left[0].shape, 'left[1].shape', left[1].shape, ))
+			print(('left', left))
 			
 		else:
 			# the rest of the domain, i.e., the partitions without the curve
 			
 			# suppose not
-			top = np.array([np.linspace(xi, x_divs[i+1], resolution//3), np.array([domain['y_max']]*(resolution//3))])
+			top = array([linspace(xi, x_divs[i+1], resolution//3), array([domain['y_max']]*(resolution//3))])
 #			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = np.array([np.linspace(xi, x_divs[i+1], resolution//3), [domain['y_min']]*(resolution//3)])
-			left = np.array([np.array([xi]*(resolution//3)), np.linspace(domain['y_min'], domain['y_max'], resolution//3)])
+			bottom = array([linspace(xi, x_divs[i+1], resolution//3), [domain['y_min']]*(resolution//3)])
+			left = array([array([xi]*(resolution//3)), linspace(domain['y_min'], domain['y_max'], resolution//3)])
 #			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = np.array([np.array([x_divs[i+1]]*(resolution//3)), np.linspace(domain['y_min'], domain['y_max'], resolution//3)])
+			right = array([array([x_divs[i+1]]*(resolution//3)), linspace(domain['y_min'], domain['y_max'], resolution//3)])
 #			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			print(('3'))
 			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
@@ -611,7 +675,7 @@ def heuristic_3(domain, k, threshold):
 #		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
-#		print(('border.shape', np.array(borders).shape))
+#		print(('border.shape', array(borders).shape))
 	return (x_divs, borders)
 
 
@@ -657,7 +721,7 @@ imp.reload(pjt); vv=pjt.generate_curve(100, 2, 10, 5, {'radius':1}, pjt.circle, 
 			f = open('%s_part_%d.txt'%(filename, i), 'wt')
 			for bd in part:
 				f.write('%d\n'%(len(bd[0])))
-				print(np.array(bd).shape)
+				print(array(bd).shape)
 				[f.write('%.2f %.2f\n'%(bd[0][j], bd[1][j])) for j in range(len(bd[0]))]
 			f.close()
 
@@ -764,9 +828,9 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain
 
 
 # merging the grids into one
-grid = np.array(grid)
-final_grid_x = np.vstack(grid[:, 0, :, :]), np.vstack(grid[:, 1, :, :])
-final_grid_y = np.hstack(grid[:, 0, :, :]), np.hstack(grid[:, 1, :, :])
+grid = array(grid)
+final_grid_x = vstack(grid[:, 0, :, :]), vstack(grid[:, 1, :, :])
+final_grid_y = hstack(grid[:, 0, :, :]), hstack(grid[:, 1, :, :])
 nx,ny = final_grid_x[0].shape
 
 
@@ -811,47 +875,49 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 						plot=plot, **kwargs)
 		# TODO move this block to the refinement part
 		# refine the borders
+		"""
 		nx, ny = grid_i[0].shape
 		print(('x.shape', grid_i[0].shape, 'y.shape', grid_i[1].shape ))
 		print((grid_i[0][[nx-1, nx-2], :].shape, grid_i[0][[0, 1], :].shape, grid_i[0][:, [0, 1]].shape, grid_i[0][:, [ny-1, ny-2]].shape, ))
 		print((grid_i[0][[nx-2], :].shape, grid_i[0][[1], :].shape, grid_i[0][:, [1]].shape, grid_i[0][:, [ny-2]].shape, ))
-		b_top = np.array((np.vstack((
+		b_top = array((vstack((
 								grid_i[0][[nx-2], :],
 								grid_i[0][[nx-1, nx-2], :],
 								)),
-							np.vstack((
+							vstack((
 								grid_i[1][[nx-2], :],
 								grid_i[1][[nx-1, nx-2], :],
 								))
 							))
-		b_bottom = np.array((np.vstack((
+		b_bottom = array((vstack((
 								grid_i[0][[1], :],
 								grid_i[0][[0, 1], :],
 								)),
-							np.vstack((
+							vstack((
 								grid_i[1][[1], :],
 								grid_i[1][[0, 1], :],
 								))
 							))
-		b_left = np.array((np.hstack((
+		b_left = array((hstack((
 								grid_i[0][:, [1]],
 								grid_i[0][:, [0, 1]],
 								)),
-							np.hstack((
+							hstack((
 								grid_i[1][:, [1]],
 								grid_i[1][:, [0, 1]],
 								))
 							))
-		b_right = np.array((np.hstack((
+		b_right = array((hstack((
 								grid_i[0][:, [ny-2]],
 								grid_i[0][:, [ny-1, ny-2]],
 								)),
-							np.hstack((
+							hstack((
 								grid_i[1][:, [ny-2]],
 								grid_i[1][:, [ny-1, ny-2]],
 								))
 							))
 		borders = [ b_top, b_bottom, b_left, b_right ]
+		"""
 		"""
 		for bd in borders:
 			bd = poisson.grid(filename='', save_file='tmp.vtk', iter_number=30, 
@@ -876,32 +942,32 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 	
 	
 	# merging the grids into two parts
-	grid = np.array(grid)
+	grid = array(grid)
 #	print((grid[0].shape[2]))
 	print(('grid.shape', grid.shape))
-#	np.hstack(grid[:, 0, 0, :]) 
+#	hstack(grid[:, 0, 0, :]) 
 	threshold = abs(domain['x_min_cv'] - domain['center'][0])
 	id_half = 2 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 1
-	split_grid = np.array(( 
-					np.array((	
-						[np.hstack(grid[:id_half, 0, i, :]) for i in range(grid[0].shape[2])] ,
-						[np.hstack(grid[:id_half, 1, i, :]) for i in range(grid[0].shape[2])]
+	split_grid = array(( 
+					array((	
+						[hstack(grid[:id_half, 0, i, :]) for i in range(grid[0].shape[2])] ,
+						[hstack(grid[:id_half, 1, i, :]) for i in range(grid[0].shape[2])]
 					)),
-					np.array((	
-						[np.hstack(grid[id_half:, 0, i, :]) for i in range(grid[0].shape[2])] ,
-						[np.hstack(grid[id_half:, 1, i, :]) for i in range(grid[0].shape[2])]
+					array((	
+						[hstack(grid[id_half:, 0, i, :]) for i in range(grid[0].shape[2])] ,
+						[hstack(grid[id_half:, 1, i, :]) for i in range(grid[0].shape[2])]
 					))
 				))
 	print(('split_grid', split_grid.shape))
 	
 	
-	final_grid = np.array((	
-					[np.hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
-					[np.hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
+	final_grid = array((	
+					[hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
+					[hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
 					))
-#	final_grid = np.array(( np.vstack(grid[:, 0, :, :]), np.vstack(grid[:, 1, :, :]) ))
+#	final_grid = array(( vstack(grid[:, 0, :, :]), vstack(grid[:, 1, :, :]) ))
 
-#	final_grid_y = np.array(( np.hstack(grid[:, 0, :, :]).transpose(), np.hstack(grid[:, 1, :, :]).transpose() ))
+#	final_grid_y = array(( hstack(grid[:, 0, :, :]).transpose(), hstack(grid[:, 1, :, :]).transpose() ))
 	
 	# TODO check if the vtk is ok, it does not seem so
 	# I think the only solution is to work with two halves of the grid
@@ -980,15 +1046,15 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 	mask = [False if j in domain['curve'][1] else mask[i] for i, j in enumerate( final_grid2[1][:, 0] )]
 	print(('mask', mask))
 	print()
-	avg = np.average( np.array(( final_grid1[1][:, -2], final_grid2[1][:, 1] )), axis=0)
+	avg = average( array(( final_grid1[1][:, -2], final_grid2[1][:, 1] )), axis=0)
 	final_grid1[1][:, -1] = avg
 	final_grid2[1][:, 0] = avg
 	print(('final_grid1[1].shape',final_grid1[1].shape))
 	print(('final_grid2[1].shape',final_grid2[1].shape))
 	print(('avg.shape', avg.shape))
-	print(('np.average(avg).shape', np.average(avg).shape))
+	print(('average(avg).shape', average(avg).shape))
 	print()
-	print(('np.average(avg, axis=0)', np.average(avg, axis=0)))
+	print(('average(avg, axis=0)', average(avg, axis=0)))
 	print()
 	print(('final_grid1[1][:,-2]',final_grid1[1][:,-2]))
 	print()
