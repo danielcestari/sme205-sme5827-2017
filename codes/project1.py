@@ -260,16 +260,18 @@ def heuristic_1(domain, k, threshold):
 			# the rest of the domain, i.e., the partitions without the curve
 			
 			# TODO adjust the resolution of the first partition to have the same "density"
-			res = int(resolution*(x_divs[i+1]-xi)/(x_divs[-1] - x_divs[-2]))
 			res = resolution
 			top = [linspace(xi, x_divs[i+1], res), array([domain['y_max']]*res)]
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
 			bottom = (linspace(xi, x_divs[i+1], res), [domain['y_min']]*res)
 			
 			# in case this is not the first partition, then refine the borders on the left and right
 			if i == 0:
 				left = [array([xi]*res), linspace(domain['y_min'], domain['y_max'], res)]
 				right = [array([x_divs[i+1]]*res), linspace(domain['y_min'], domain['y_max'], res)]
+				
+#				res = int(resolution*(x_divs[i+1]-xi)/(x_divs[-1] - x_divs[-2]))
+				top = [linspace(xi, x_divs[i+1], res), array([domain['y_max']]*res)]
+				bottom = (linspace(xi, x_divs[i+1], res), [domain['y_min']]*res)
 			else:
 				res_refined = int(0.8*res)
 				res_coarse = int((res - res_refined)/2)
@@ -938,33 +940,51 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 		grid_i[0][:, ny-1] = b_right[0][:, 1]
 #		grid_i[1][:, ny-1] = b_right[1][:, 1]
 		"""
-		grid.append( grid_i )
+#		"""
+		print(('QUASE', grid_i.shape))
+		print(('f', f))
+		print(grid_i[0][0, -1])
+		print(grid_i[0][:, :].shape)
+		print(grid_i[0][:, :-1].shape)
+		print(domain['center'])
+#		"""
+		epsilon = 1e-10
+		if abs(grid_i[0][0, -1] - domain['center'][0]) < epsilon:
+			grid.append( grid_i )
+		else:
+			grid.append( array((grid_i[0][:, :-1], grid_i[1][:, :-1])) )
 	
 	
 	# merging the grids into two parts
-	grid = array(grid)
-#	print((grid[0].shape[2]))
-	print(('grid.shape', grid.shape))
+#	grid = array(grid)
+	
+	print(('BB', grid[0].shape))
+#	print(('grid.shape', grid.shape))
 #	hstack(grid[:, 0, 0, :]) 
 	threshold = abs(domain['x_min_cv'] - domain['center'][0])
 	id_half = 2 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 1
-	split_grid = array(( 
-					array((	
-						[hstack(grid[:id_half, 0, i, :]) for i in range(grid[0].shape[2])] ,
-						[hstack(grid[:id_half, 1, i, :]) for i in range(grid[0].shape[2])]
-					)),
-					array((	
-						[hstack(grid[id_half:, 0, i, :]) for i in range(grid[0].shape[2])] ,
-						[hstack(grid[id_half:, 1, i, :]) for i in range(grid[0].shape[2])]
+	split_grid = [ ]
+	split_grid1=				array((	
+						[ hstack([ part[0, l, :] for part in grid[:id_half]]) for l in range(grid[0].shape[1])],
+						[ hstack([ part[1, l, :] for part in grid[:id_half]]) for l in range(grid[0].shape[1])],
+#						[hstack(grid[:id_half][ 0, i, :]) for i in range(grid[0][0].shape[0])] ,
+#						[hstack(grid[:id_half][ 1, i, :]) for i in range(grid[0][1].shape[0])]
 					))
-				))
-	print(('split_grid', split_grid.shape))
+	split_grid2=				array((	
+						[ hstack([ part[0, l, :] for part in grid[id_half:]]) for l in range(grid[0].shape[1])],
+						[ hstack([ part[1, l, :] for part in grid[id_half:]]) for l in range(grid[0].shape[1])],
+#						[hstack(grid[id_half:][ 0, i, :]) for i in range(grid[0][0].shape[0])] ,
+#						[hstack(grid[id_half:][ 1, i, :]) for i in range(grid[0][1].shape[0])]
+					))
+	[			]
+#	print(('split_grid', split_grid.shape))
 	
 	
-	final_grid = array((	
-					[hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
-					[hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
-					))
+#	final_grid = array((	
+#					[hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
+#					[hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
+#					))
+
 #	final_grid = array(( vstack(grid[:, 0, :, :]), vstack(grid[:, 1, :, :]) ))
 
 #	final_grid_y = array(( hstack(grid[:, 0, :, :]).transpose(), hstack(grid[:, 1, :, :]).transpose() ))
@@ -975,15 +995,16 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 	
 	# get the index of the position of the center of the curve, where the grid should be split
 	threshold = abs(domain['x_min_cv'] - domain['center'][0])
-	id_half = final_grid.shape[1]
-	id_half *= 3 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 2
+#	id_half = final_grid.shape[1]
+#	id_half *= 3 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 2
 	
 	
 	
-	print(final_grid.shape)
+#	print(final_grid.shape)
 #	print(final_grid_y.shape)
 	
 	# plotting the two halves before the refinement
+	"""
 	NULL, nx,ny = split_grid[0].shape
 	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
 	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
@@ -991,7 +1012,17 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 	[plt.plot(split_grid[0][0][i,:], split_grid[0][1][i,:], '.-', color='gray') for i in range(nx)]; 
 	[plt.plot(split_grid[1][0][i,:], split_grid[1][1][i,:], '.-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
+	""
+	NULL, nx,ny = split_grid[0].shape
+	[plt.plot(split_grid1[0][:,i], split_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	[plt.plot(split_grid2[0][:,i], split_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
+	NULL, nx,ny = split_grid[1].shape
+	[plt.plot(split_grid1[0][i,:], split_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(split_grid2[0][i,:], split_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	plt.show(); plt.close('all')
+	"""
 	
+	print(('CCCCC', split_grid1.shape))
 	
 	# apply the refinement but for the first half
 	final_grid1 = poisson.grid(filename='', 
@@ -1009,7 +1040,7 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 						c_etas=c_etas0 if len(c_etas0) != 0 else [], 
 						d_etas=d_etas0 if len(d_etas0) != 0 else [], 
 						plot=plot, 
-						comp_grid=(split_grid[0][0], split_grid[0][1])) 
+						comp_grid=(split_grid1[0], split_grid1[1])) 
 	
 	
 	# apply the refinement but for the second half
@@ -1028,14 +1059,14 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 						c_etas=c_etas1 if len(c_etas1) != 0 else [], 
 						d_etas=d_etas1 if len(d_etas1) != 0 else [], 
 						plot=plot, 
-						comp_grid=(split_grid[1][0], split_grid[1][1])) 
+						comp_grid=(split_grid2[0], split_grid2[1])) 
 	
 	# plotting the two halves after the refinement
-	NULL, nx,ny = split_grid[0].shape
+	NULL, nx,ny = final_grid1.shape
 	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	NULL, nx,ny = split_grid[1].shape
 	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	NULL, nx,ny = final_grid2.shape
+	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
 	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
 	

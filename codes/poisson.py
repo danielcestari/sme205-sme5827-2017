@@ -22,7 +22,23 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 	if len(comp_grid) != 0:
 		gridx, gridy = comp_grid
 		ny, nx = gridx.shape
+		print()
+		print(('comp_grid'))
+		print(('gridx.shape', gridx.shape))
+		print(('gridy.shape', gridy.shape))
+		print(('nx', nx, 'ny', ny))
 		dx, dy = 1.0/nx, 1.0/ny
+		rt = np.array([(gridx[-1, i], gridy[-1, i]) for i in range(nx)])
+		rb = np.array([(gridx[0, i], gridy[0, i]) for i in range(nx)])
+		rl = np.array([(gridx[i, 0], gridy[i, 0]) for i in range(ny)])
+		rr = np.array([(gridx[i, -1], gridy[i, -1]) for i in range(ny)])
+		
+		print(('rt.shape', rt.shape))
+		print(('rb.shape', rb.shape))
+		print(('rl.shape', rl.shape))
+		print(('rr.shape', rr.shape))
+		
+		print()
 	else:
 		f = open(filename,'rt')
 
@@ -59,8 +75,8 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 
 		if (n2 != ny):
 			print("left and right discretization should match")
-			raise Exception("top and botton discretization should match")
-			raise ValueError("top and botton discretization should match")
+			raise Exception("left and right discretization should match")
+			raise ValueError("left and right discretization should match")
 			return -1
 			sys.exit(0)
 
@@ -135,10 +151,15 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 	
 	g2vtk.grid2vtk([gridx],[gridy], save_file)
 	
+	print('POISSON')
+	print(('gridx.shape', gridx.shape))
+	print(('gridy.shape', gridy.shape))
+	print(('nx', nx, 'ny', ny))
+	
 	if plot:
-		for i in range(nx):
-			plt.plot(gridx[i,:],gridy[i,:], '.-', color='gray')
 		for i in range(ny):
+			plt.plot(gridx[i,:],gridy[i,:], '.-', color='gray')
+		for i in range(nx):
 			plt.plot(gridx[:,i],gridy[:,i], '.-', color='gray')
 
 		plt.plot(rt[:,0],rt[:,1])
@@ -148,7 +169,7 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 		plt.show()
 		plt.close('all')
 	
-	return (gridx, gridy)
+	return np.array((gridx, gridy))
 
 # In[ ]:
 
