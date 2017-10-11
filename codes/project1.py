@@ -148,9 +148,6 @@ def heuristic_1(domain, k, threshold):
 	# and the rest of the partition as the square division, top is top, bottom is bottom, 
 	# left is left and right is right
 	
-	# TODO have not done it yet
-	# ATTENTION to the corners, remember to start some in the "second" point
-	
 	# to avoid roundoff errors of the index, reassign resolution
 	resolution = int(resolution/2)*2
 	
@@ -351,9 +348,6 @@ def heuristic_2(domain, k, threshold):
 	# and the rest of the partition as the square division, top is top, bottom is bottom, 
 	# left is left and right is right
 	
-	# TODO have not done it yet
-	# ATTENTION to the corners, remember to start some in the "second" point
-	
 	# to avoid roundoff errors of the index, reassign resolution
 	resolution = int(resolution//4)*8
 	
@@ -390,14 +384,14 @@ def heuristic_2(domain, k, threshold):
 			right = [	hstack((
 							array([x_divs[i+1]]*(int(resolution/4) +1)),
 #							array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-							array(domain['curve'][0])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
-							array([x_divs[i+1]]*(int(resolution/4) +1)),
+							array(domain['curve'][0])[ range(int(resolution*3/4)-0, int(resolution/4) +1,-1)], 
+							array([x_divs[i+1]]*(int(resolution/4) +0)),
 						)),
 						hstack((
 							linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
 #							array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
-							array(domain['curve'][1])[ range(int(resolution*3/4)-1, int(resolution/4) +1,-1)], 
-							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
+							array(domain['curve'][1])[ range(int(resolution*3/4)-0, int(resolution/4) +1,-1)], 
+							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +0),
 						))
 					]
 			
@@ -411,14 +405,14 @@ def heuristic_2(domain, k, threshold):
 			left = [	hstack((
 							array([xi]*int(resolution/4+1)),
 #							array(domain['curve'][0][int(resolution/2):int(resolution*3/2)]), 
-							array(domain['curve'][0])[ hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
-							array([xi]*(int(resolution/4) +1)),
+							array(domain['curve'][0])[ hstack((range(int(resolution*3/4)+2, resolution +1), range(0, int(resolution/4))))], 
+							array([xi]*(int(resolution/4) +0)),
 						)),
 						hstack((
 							linspace(domain['y_min'], domain['y_min_cv'], int(resolution/4) +1),
 #							array(domain['curve'][1][int(resolution/2):int(resolution*3/2)]),
-							array(domain['curve'][1])[ hstack((range(int(resolution*3/4)+2, resolution ), range(0, int(resolution/4))))], 
-							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
+							array(domain['curve'][1])[ hstack((range(int(resolution*3/4)+2, resolution +1), range(0, int(resolution/4))))], 
+							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +0),
 						))
 					]
 
@@ -438,202 +432,6 @@ def heuristic_2(domain, k, threshold):
 
 	return (x_divs, borders)
 
-
-
-def heuristic_3(domain, k, threshold):
-	"""
-####
-# Partitionate the domain and generate the borders following the heuristic 2
-##
-# domain:		Dictionary. The dictionary with the domain information, the same returned
-#				by the function generate_curve
-# k:			Integer. The number of splits to perform on the domain
-# threshold:	Number. The minimum distance between the first half of the curve and the 
-#				left border of the given partition. If the distance between the curve and the
-#				start of the domain is less than the given threshold does not perform a split
-#				before the curve. Otherwise perform a split before the curve.
-##
-# Return a tuple were the first element is the positions where the domain
-# were split, and the second is the list of the borders for every partition
-#
-# The first heuristic turns the points on the left as the left border, and on the curve only as the right border, unless the curve is on the right, then this logic is inverse. The other points become the top and bottom borders
-
-# Usage example:
-
-
-
-	"""
-	
-	# the resolution of the grid/border is given by the number of points in the curve
-	resolution = len(domain['curve'][0])/2
-#	resolution = len(domain['curve'][0])
-	
-	# the partitions are equally spaced in X
-	# the first two partitions define how much of the domain is left
-	
-	# if it is not possible to have all partitions equally spaced,
-	# at least make the partition after the curve with the same principle
-	# and then for the rest adjust its size to fit all k partitions
-	
-	# ATTENTION make the right border of the previous partition equal the left border
-	# of the next partition
-	
-	# start by the division of the curve into two, then continue the partition
-	
-	borders = [[]] * (k+1)
-	borders = []
-	# add the leftmost point for the iteration to work later
-	x_divs = [domain['x_min']]
-	
-	# the 3 first divisions are different, because the first one I have to check the distance
-	# between the first division to the curve if it respects the threshold
-	# then the second is fixed in the center of the curve
-	# and the third I choose to be symmetric to the second one respect to the curve
-	
-	# if there is 2*threshold between the leftmost point in the curve and the left border
-	# then the first partition occurs on domain['x_min'] + threshold
-	if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold :
-		x_divs.append( domain['x_min'] + threshold  )
-	# divide the curve in two
-	x_divs.append( domain['center'][0] )
-	
-	# the next division is symmetrical to the previous one
-	x_divs.append( x_divs[-1] + abs(x_divs[-1] - x_divs[-2]) )
-	
-	# the remaining of the domain is equally divided
-	x_divs.append( linspace(start=x_divs[-1], stop=domain['x_max'], num=k - len(x_divs) +3)[1:] )
-	x_divs = hstack(x_divs)
-	
-	# the convention of the borders on the curve, first half, is
-	# the left border of the partition is the normal one and the right 
-	# curve itself
-	# the top is the top and the vertical part until it reaches the curve
-	# and the bottom is the bottom and the vertical until it reaches the curve
-	
-	# the second half of the curve is the same, just changing the left for the right
-	# and the rest of the partition as the square division, top is top, bottom is bottom, 
-	# left is left and right is right
-	
-	# TODO have not done it yet
-	# ATTENTION to the corners, remember to start some in the "second" point
-	
-	# to avoid roundoff errors of the index, reassign resolution
-	resolution = int(resolution/6)*6
-	
-	# the grid generation has to follow the orientation left to right for the top and bottom
-	# borders,
-	# and bottom to top for the left and right borders
-	# this is because of the code used to generate the grid, if this orientation is not
-	# followed the generated grid becames twisted
-	
-	# the order of the borders is top, bottom, left, right
-	for i, xi in enumerate(x_divs[:-1]):
-		# CHECK if we are dealing with the curve partition
-		# Think I need to deal with each side separatedly	
-		
-		direct_ids = list(range(resolution))
-		reverse_ids = list(range(resolution))
-		reverse_ids.reverse()
-		
-		if (x_divs[i+1] == domain['center'][0]):
-			# the first half of the curve
-			
-			# compute the number of points in the horizontal and vertical paths
-			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
-			n_pts_vertical = resolution - n_pts_horizontal
-			
-			top = array([	
-					[x_divs[i+1]]*(resolution),
-					linspace(domain['y_max'], domain['y_max_cv'], resolution+0)[:]
-					])
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = array([	
-					[x_divs[i+1]]*(resolution),
-					linspace(domain['y_min'], domain['y_min_cv'], resolution+0)[:]
-					])
-			
-			right = array([
-					domain['curve'][0][range(int(resolution*3/2) -0, (int(resolution/2) -0), -3)],
-					domain['curve'][1][range(int(resolution*3/2) -0, (int(resolution/2) -0), -3)]
-					])
-			
-			left = array([
-					hstack((	#linspace(domain['center'][0], xi, resolution/3 +1)[:-1], 
-								[xi]*int(resolution/3),
-								#linspace(xi, domain['center'][0], resolution/3 +1)[1:]
-					)),
-					hstack((	#[domain['y_min']]*int(resolution/3),
-								linspace(domain['y_min'], domain['y_max'], resolution/3 ),
-								#[domain['y_max']]*int(resolution/3),
-					)),
-					])
-			print(('1'))
-			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
-			print(('bottom[0].shape', bottom[0].shape, 'bottom[1].shape', bottom[1].shape, ))
-			print(('right[0].shape', right[0].shape, 'right[1].shape', right[1].shape, ))
-			print(('right', right))
-			print(('left[0].shape', left[0].shape, 'left[1].shape', left[1].shape, ))
-			print(('left', left))
-		elif (xi == domain['center'][0]):
-			# the second half of the curve
-			
-			top = array([	
-					[xi]*(resolution),
-					linspace(domain['y_max_cv'], domain['y_max'], resolution+0)[:]
-					])
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = array([	
-					[xi]*(resolution),
-					linspace(domain['y_min_cv'], domain['y_min'], resolution+0)[:]
-					])
-			
-			left = array([
-					hstack((domain['curve'][0][range(int(resolution*3/2), resolution*2, 3)], domain['curve'][0][range(1, int(resolution/2) +1, 3)])), 
-					hstack((domain['curve'][1][range(int(resolution*3/2), resolution*2, 3)], domain['curve'][1][range(1, int(resolution/2) +1, 3)])), 
-					])
-			
-			right = array([
-					hstack((	#linspace(xi, x_divs[i+1], resolution/3 ), 
-								[x_divs[i+1]]*int(resolution/3),
-								#linspace(x_divs[i+1], xi, resolution/3 )
-					)),
-					hstack((	#[domain['y_min']]*int(resolution/3),
-								linspace(domain['y_min'], domain['y_max'], resolution/3 +0)[:],
-								#[domain['y_max']]*int(resolution/3),
-					)),
-					])
-			print(('2'))
-			print(domain)
-			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
-			print(('bottom[0].shape', bottom[0].shape, 'bottom[1].shape', bottom[1].shape, ))
-			print(('right[0].shape', right[0].shape, 'right[1].shape', right[1].shape, ))
-			print(('right', right))
-			print(('left[0].shape', left[0].shape, 'left[1].shape', left[1].shape, ))
-			print(('left', left))
-			
-		else:
-			# the rest of the domain, i.e., the partitions without the curve
-			
-			# suppose not
-			top = array([linspace(xi, x_divs[i+1], resolution//3), array([domain['y_max']]*(resolution//3))])
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			bottom = array([linspace(xi, x_divs[i+1], resolution//3), [domain['y_min']]*(resolution//3)])
-			left = array([array([xi]*(resolution//3)), linspace(domain['y_min'], domain['y_max'], resolution//3)])
-#			left[0], left[1] = left[0][reverse_ids], left[1][reverse_ids]
-			right = array([array([x_divs[i+1]]*(resolution//3)), linspace(domain['y_min'], domain['y_max'], resolution//3)])
-#			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
-			print(('3'))
-			print(('top[0].shape', top[0].shape, 'top[1].shape', top[1].shape, ))
-			print(('bottom[0].shape', bottom[0].shape, 'bottom[1].shape', bottom[1].shape, ))
-			print(('right[0].shape', right[0].shape, 'right[1].shape', right[1].shape, ))
-			print(('left[0].shape', left[0].shape, 'left[1].shape', left[1].shape, ))
-			
-		
-#		borders[i].append( [top, bottom, left, right] )
-		borders.append( [top, bottom, left, right] )
-
-#		print(('border.shape', array(borders).shape))
-	return (x_divs, borders)
 
 
 
@@ -779,6 +577,9 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_
 
 
 imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle", xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[7.5], c_etas1=[20])
+
+# example
+imp.reload(pjt);  grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle", xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[1], c_etas1=[0.1])
 
 
 imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, domain_height=4, curve_params={"radius":1}, equation=pjt.circle, filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle")
