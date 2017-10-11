@@ -177,35 +177,20 @@ def heuristic_1(domain, k, threshold):
 		
 		
 		# compute the number of points in the horizontal and vertical paths
-		n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution *1.0)
+		n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution *0.8)
 		n_pts_vertical = resolution - n_pts_horizontal
+		
+		res = resolution
+		res_refined = int(0.8*res)
+		res_coarse = int((res - res_refined)/2)
 		
 		if (x_divs[i+1] == domain['center'][0]):
 			# the first half of the curve
-			
 			
 			top = [	hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical )),
 					hstack(([domain['y_max']]*n_pts_horizontal, refine(domain['y_max_cv'], domain['y_max'], linspace(0,1,n_pts_vertical)))) ]
 			bottom = [hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical )),
 					hstack(([domain['y_min']]*n_pts_horizontal, refine(domain['y_min_cv'], domain['y_min'], linspace(0,1,n_pts_vertical)))) ]
-#			"""
-			print(('H1'))
-			print((top, len(top[0]), len(top[1])))
-			print((bottom, len(bottom[0]), len(bottom[1])))
-			print(('top.shape', array(top).shape))
-			print(('bottom.shape', array(bottom).shape))
-			print((n_pts_horizontal, n_pts_vertical))
-#			"""
-
-
-
-			
-#			top = [	hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
-#					hstack(([domain['y_max']]*n_pts_horizontal, linspace(domain['y_max'], domain['y_max_cv'], n_pts_vertical))) ]
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			
-#			bottom = (hstack((linspace(xi, x_divs[i+1], n_pts_horizontal +1)[:-1], [x_divs[i+1]]*n_pts_vertical)), 
-#						hstack(([domain['y_min']]*n_pts_horizontal, linspace(domain['y_min'], domain['y_min_cv'], n_pts_vertical))) )
 			
 			# since the curve starts at the rightmost point, I can start here with the
 			# the point located at 1/4 of the curve length and go up until 3/4 
@@ -220,26 +205,11 @@ def heuristic_1(domain, k, threshold):
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
 			
-			
-			top = [	hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
-					hstack((refine(domain['y_max_cv'], domain['y_max'], linspace(1,0,n_pts_vertical)), [domain['y_max']]*n_pts_horizontal )) ]
-			bottom = [hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
-					hstack((refine(domain['y_min_cv'], domain['y_min'], linspace(1,0,n_pts_vertical)), [domain['y_min']]*n_pts_horizontal )) ]
+			top = [	hstack(([xi]*(n_pts_vertical), linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
+					hstack((refine(domain['y_max_cv'], domain['y_max'], linspace(1,0,n_pts_vertical)), [domain['y_max']]*(n_pts_horizontal) )) ]
+			bottom = [hstack(([xi]*(n_pts_vertical), linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:] )),
+					hstack((refine(domain['y_min_cv'], domain['y_min'], linspace(1,0,n_pts_vertical)), [domain['y_min']]*(n_pts_horizontal) )) ]
 
-
-			"""
-			# compute the number of points in the horizontal and vertical paths
-			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
-			n_pts_vertical = resolution - n_pts_horizontal
-			
-			top = [	hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
-					hstack((linspace(domain['y_max_cv'], domain['y_max'], n_pts_vertical), [domain['y_max']]*n_pts_horizontal)) ]
-#			top[0], top[1] = top[0][reverse_ids], top[1][reverse_ids]
-			
-			
-			bottom = (hstack(([xi]*n_pts_vertical, linspace(xi, x_divs[i+1], n_pts_horizontal +1)[1:])), 
-						hstack((linspace(domain['y_min_cv'], domain['y_min'], n_pts_vertical), [domain['y_min']]*n_pts_horizontal)) )
-			"""
 			
 			left = [	hstack((domain['center'][0], array(domain['curve'][0])[range(-int(resolution/2)+1,int(resolution/2)-1)], domain['center'][0])), 
 						hstack((domain['y_min_cv'], array(domain['curve'][1])[hstack((range(-int(resolution/2)+1, 0), range(1, int(resolution/2))))], domain['y_max_cv'])) ]
@@ -247,9 +217,6 @@ def heuristic_1(domain, k, threshold):
 			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 			
-			res = resolution
-			res_refined = int(0.8*res)
-			res_coarse = int((res - res_refined)/2)
 			right = [	array([x_divs[i+1]]*res), 
 						hstack(( linspace(domain['y_min'], domain['y_min_cv'], res_coarse +1)[:-1],
 						linspace(domain['y_min_cv'], domain['y_max_cv'], res_refined), 
@@ -287,10 +254,8 @@ def heuristic_1(domain, k, threshold):
 						]
 #				right = [array([x_divs[i+1]]*res), linspace(domain['y_min'], domain['y_max'], res)]
 		
-#		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
-#		print(('border.shape', array(borders).shape))
 	return (x_divs, borders)
 
 
@@ -407,12 +372,13 @@ def heuristic_2(domain, k, threshold):
 		reverse_ids = list(range(resolution))
 		reverse_ids.reverse()
 		
+		# compute the number of points in the horizontal and vertical paths
+		n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
+		n_pts_vertical = resolution - n_pts_horizontal
+			
+		
 		if (x_divs[i+1] == domain['center'][0]):
 			# the first half of the curve
-			
-			# compute the number of points in the horizontal and vertical paths
-			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
-			n_pts_vertical = resolution - n_pts_horizontal
 			
 			top = [linspace(xi, x_divs[i+1], resolution), array([domain['y_max']]*resolution)]
 			bottom = (linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
@@ -434,19 +400,10 @@ def heuristic_2(domain, k, threshold):
 							linspace(domain['y_max_cv'], domain['y_max'], int(resolution/4) +1),
 						))
 					]
-			print()
-			print((array(left).shape))
-			print((array(right).shape))
-			print()
 			
 		elif (xi == domain['center'][0]):
 			# the second half of the curve
 			
-			# compute the number of points in the horizontal and vertical paths
-			n_pts_horizontal = int((abs(x_divs[i+1] - xi)) / (abs(x_divs[i+1] - xi) + abs(domain['y_max'] - domain['y_max_cv'])) * resolution)
-			n_pts_vertical = resolution - n_pts_horizontal
-
-
 			top = [linspace(xi, x_divs[i+1], resolution), array([domain['y_max']]*resolution)]
 			bottom = (linspace(xi, x_divs[i+1], resolution), [domain['y_min']]*resolution)
 			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_min'], domain['y_max'], resolution)]
@@ -477,10 +434,8 @@ def heuristic_2(domain, k, threshold):
 			right = [array([x_divs[i+1]]*resolution), linspace(domain['y_max'], domain['y_min'], resolution)]
 			right[0], right[1] = right[0][reverse_ids], right[1][reverse_ids]
 		
-#		borders[i].append( [top, bottom, left, right] )
 		borders.append( [top, bottom, left, right] )
 
-#		print(('border.shape', array(borders).shape))
 	return (x_divs, borders)
 
 
@@ -875,90 +830,19 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 		grid_i = poisson.grid(filename='%s_part_%d.txt'%(filename_borders, f), 
 						save_file='%s_part_%d.vtk'%(filename_borders, f), iter_number=iter_number, 
 						plot=plot, **kwargs)
-		# TODO move this block to the refinement part
-		# refine the borders
-		"""
-		nx, ny = grid_i[0].shape
-		print(('x.shape', grid_i[0].shape, 'y.shape', grid_i[1].shape ))
-		print((grid_i[0][[nx-1, nx-2], :].shape, grid_i[0][[0, 1], :].shape, grid_i[0][:, [0, 1]].shape, grid_i[0][:, [ny-1, ny-2]].shape, ))
-		print((grid_i[0][[nx-2], :].shape, grid_i[0][[1], :].shape, grid_i[0][:, [1]].shape, grid_i[0][:, [ny-2]].shape, ))
-		b_top = array((vstack((
-								grid_i[0][[nx-2], :],
-								grid_i[0][[nx-1, nx-2], :],
-								)),
-							vstack((
-								grid_i[1][[nx-2], :],
-								grid_i[1][[nx-1, nx-2], :],
-								))
-							))
-		b_bottom = array((vstack((
-								grid_i[0][[1], :],
-								grid_i[0][[0, 1], :],
-								)),
-							vstack((
-								grid_i[1][[1], :],
-								grid_i[1][[0, 1], :],
-								))
-							))
-		b_left = array((hstack((
-								grid_i[0][:, [1]],
-								grid_i[0][:, [0, 1]],
-								)),
-							hstack((
-								grid_i[1][:, [1]],
-								grid_i[1][:, [0, 1]],
-								))
-							))
-		b_right = array((hstack((
-								grid_i[0][:, [ny-2]],
-								grid_i[0][:, [ny-1, ny-2]],
-								)),
-							hstack((
-								grid_i[1][:, [ny-2]],
-								grid_i[1][:, [ny-1, ny-2]],
-								))
-							))
-		borders = [ b_top, b_bottom, b_left, b_right ]
-		"""
-		"""
-		for bd in borders:
-			bd = poisson.grid(filename='', save_file='tmp.vtk', iter_number=30, 
-						xis_rf=[], etas_rf=[], points_rf=[], 
-						a_xis=[], b_xis=[], c_xis=[], d_xis=[], 
-						a_etas=[], b_etas=[], c_etas=[], d_etas=[], 
-						plot=False, comp_grid=bd)
-		# top
-		grid_i[0][nx-1, :] = b_top[0][1, :]
-#		grid_i[1][nx-1, :] = b_top[1][1, :]
-		# bottom
-		grid_i[0][0, :] = b_bottom[0][1, :]
-#		grid_i[1][0, :] = b_bottom[1][1, :]
-		# left
-		grid_i[0][:, 0] = b_left[0][:, 1]
-#		grid_i[1][:, 0] = b_left[1][:, 1]
-		# right
-		grid_i[0][:, ny-1] = b_right[0][:, 1]
-#		grid_i[1][:, ny-1] = b_right[1][:, 1]
-		"""
-#		"""
-		print(('QUASE', grid_i.shape))
-		print(('f', f))
-		print(grid_i[0][0, -1])
-		print(grid_i[0][:, :].shape)
-		print(grid_i[0][:, :-1].shape)
-		print(domain['center'])
-#		"""
+		
 		epsilon = 1e-10
-		if abs(grid_i[0][0, -1] - domain['center'][0]) < epsilon:
+		if abs(grid_i[0][0, -1] - domain['center'][0]) < epsilon or abs(grid_i[0][0, 0] - domain['center'][0]) < epsilon:
 			grid.append( grid_i )
-		else:
+		elif f == 0:
 			grid.append( array((grid_i[0][:, :-1], grid_i[1][:, :-1])) )
+		else:
+			grid.append( array((grid_i[0][:, 1:], grid_i[1][:, 1:])) )
 	
 	
 	# merging the grids into two parts
 #	grid = array(grid)
 	
-	print(('BB', grid[0].shape))
 #	print(('grid.shape', grid.shape))
 #	hstack(grid[:, 0, 0, :]) 
 	threshold = abs(domain['x_min_cv'] - domain['center'][0])
@@ -977,52 +861,13 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 #						[hstack(grid[id_half:][ 1, i, :]) for i in range(grid[0][1].shape[0])]
 					))
 	[			]
-#	print(('split_grid', split_grid.shape))
-	
-	
-#	final_grid = array((	
-#					[hstack(grid[:, 0, i, :]) for i in range(grid[0].shape[2])] ,
-#					[hstack(grid[:, 1, i, :]) for i in range(grid[0].shape[2])]
-#					))
-
-#	final_grid = array(( vstack(grid[:, 0, :, :]), vstack(grid[:, 1, :, :]) ))
-
-#	final_grid_y = array(( hstack(grid[:, 0, :, :]).transpose(), hstack(grid[:, 1, :, :]).transpose() ))
 	
 	# TODO check if the vtk is ok, it does not seem so
 	# I think the only solution is to work with two halves of the grid
 	# before the hole, i.e., the curve, and after
 	
-	# get the index of the position of the center of the curve, where the grid should be split
-	threshold = abs(domain['x_min_cv'] - domain['center'][0])
-#	id_half = final_grid.shape[1]
-#	id_half *= 3 if abs(domain['x_min'] - domain['x_min_cv']) >= 2* threshold else 2
 	
 	
-	
-#	print(final_grid.shape)
-#	print(final_grid_y.shape)
-	
-	# plotting the two halves before the refinement
-	"""
-	NULL, nx,ny = split_grid[0].shape
-	[plt.plot(split_grid[0][0][:,i], split_grid[0][1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(split_grid[1][0][:,i], split_grid[1][1][:,i], '.-', color='gray') for i in range(ny)]; 
-	NULL, nx,ny = split_grid[1].shape
-	[plt.plot(split_grid[0][0][i,:], split_grid[0][1][i,:], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(split_grid[1][0][i,:], split_grid[1][1][i,:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	""
-	NULL, nx,ny = split_grid[0].shape
-	[plt.plot(split_grid1[0][:,i], split_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(split_grid2[0][:,i], split_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	NULL, nx,ny = split_grid[1].shape
-	[plt.plot(split_grid1[0][i,:], split_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(split_grid2[0][i,:], split_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	"""
-	
-	print(('CCCCC', split_grid1.shape))
 	
 	# apply the refinement but for the first half
 	final_grid1 = poisson.grid(filename='', 
@@ -1063,43 +908,13 @@ imp.reload(pjt);  grid = pjt.generate_grid(resolution=100, iter_number=50, left_
 	
 	# plotting the two halves after the refinement
 	NULL, nx,ny = final_grid1.shape
-	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '-', color='gray') for i in range(nx)]; 
 	NULL, nx,ny = final_grid2.shape
-	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
+	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '-', color='gray') for i in range(ny)]; 
+	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '-', color='gray') for i in range(nx)]; 
 	plt.show(); plt.close('all')
 	
-	"""
-	# TODO smooth the borders on the interface between halves, only the y (eta) values
-	mask = [True] * final_grid1[1].shape[0]
-	mask = [False if j in domain['curve'][1] else mask[i] for i, j in enumerate( final_grid1[1][:, -1] )]
-	mask = [False if j in domain['curve'][1] else mask[i] for i, j in enumerate( final_grid2[1][:, 0] )]
-	print(('mask', mask))
-	print()
-	avg = average( array(( final_grid1[1][:, -2], final_grid2[1][:, 1] )), axis=0)
-	final_grid1[1][:, -1] = avg
-	final_grid2[1][:, 0] = avg
-	print(('final_grid1[1].shape',final_grid1[1].shape))
-	print(('final_grid2[1].shape',final_grid2[1].shape))
-	print(('avg.shape', avg.shape))
-	print(('average(avg).shape', average(avg).shape))
-	print()
-	print(('average(avg, axis=0)', average(avg, axis=0)))
-	print()
-	print(('final_grid1[1][:,-2]',final_grid1[1][:,-2]))
-	print()
-	print(('final_grid2[1][:,1]',final_grid2[1][:,1]))
-	
-
-	NULL, nx,ny = split_grid[0].shape
-	[plt.plot(final_grid1[0][:,i], final_grid1[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	[plt.plot(final_grid2[0][:,i], final_grid2[1][:,i], '.-', color='gray') for i in range(ny)]; 
-	NULL, nx,ny = split_grid[1].shape
-	[plt.plot(final_grid1[0][i,:], final_grid1[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	[plt.plot(final_grid2[0][i,:], final_grid2[1][i,:], '.-', color='gray') for i in range(nx)]; 
-	plt.show(); plt.close('all')
-	"""
 	
 	# modify grid2vtk to receive two halves, acutally can be several parts, and properly create one vtk
 	

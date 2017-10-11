@@ -33,12 +33,7 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 		rl = np.array([(gridx[i, 0], gridy[i, 0]) for i in range(ny)])
 		rr = np.array([(gridx[i, -1], gridy[i, -1]) for i in range(ny)])
 		
-		print(('rt.shape', rt.shape))
-		print(('rb.shape', rb.shape))
-		print(('rl.shape', rl.shape))
-		print(('rr.shape', rr.shape))
 		
-		print()
 	else:
 		f = open(filename,'rt')
 
@@ -158,9 +153,9 @@ def grid(filename, save_file, iter_number, xis_rf, etas_rf, points_rf,
 	
 	if plot:
 		for i in range(ny):
-			plt.plot(gridx[i,:],gridy[i,:], '.-', color='gray')
+			plt.plot(gridx[i,:],gridy[i,:], '-', color='gray')
 		for i in range(nx):
-			plt.plot(gridx[:,i],gridy[:,i], '.-', color='gray')
+			plt.plot(gridx[:,i],gridy[:,i], '-', color='gray')
 
 		plt.plot(rt[:,0],rt[:,1])
 		plt.plot(rb[:,0],rb[:,1])
