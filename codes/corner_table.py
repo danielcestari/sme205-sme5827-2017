@@ -1,7 +1,8 @@
 
 import sys
-from numpy import linspace, hstack, vstack, array, ndarray, ones, average, cos, sin, pi, sqrt, where, append
-from numpy.linalg import det
+from numpy import linspace, hstack, vstack, array, ndarray, ones, average, cos, sin, pi, sqrt, where, append, delete
+from numpy.random import choice as sample
+from numpy.linalg import det, solve
 import matplotlib.pyplot as plt
 from grid2vtk import grid2vtk
 
@@ -22,7 +23,7 @@ class CornerTable:
 	_vt_hash = []
 	
 	# given a physical point (x,y,z coordinates), return the vertice id
-	_coord_hash = {}
+	_coord_hash = {'phys':{}, 'vir':[]}
 	
 	# given a face id, return the list of corners
 	_fc_hash = []
@@ -46,6 +47,157 @@ class CornerTable:
 			cnt = compute_corner_table(vertices=data[0], faces=data[1])
 		
 		self._vt_hash, self._fc_hash, self._cn_table = cnt[0], cnt[1], array(cnt[2])
+
+
+	def triangles_share_edge(self, fcs=[]):
+		"""
+###
+# Get the triangles that share edges
+###
+# fcs:	List. The list of triangles	
+###
+# Return a list of triangles
+# It iterate over the vertices of each triangle in the order they were created
+		"""
+		trs = []
+		for f in fcs:
+			# get the opposite corner (colunm 5) of the c0 (_fc_hash[f][0])
+			c0 = self._cn_table[self._fc_hash[f][0], 5]
+			# get the opposite corners of the next and previous corners
+			cn, cp = self._cn_table[self._cn_table[c0, 3], 5], self._cn_table[self._cn_table[c0, 4], 5]
+			# get the faces of the opposite corners c0, cn and cp
+			fc0, fc1, fc2 = self._cn_table[[c0, cn, cp], 2]
+			trs.append((-1 if c0 == -1 else fc0, -1 if cn == -1 else fc1, -1 if cp == -1 else fc2))
+		return trs
+	
+
+	def find_triangle(self, point):
+		"""
+###
+# Given a point return the triangle containing the given point
+###
+# point:	Tuple. The physical coordinate of the point
+###
+# return the number of the face
+
+# Usage example:
+
+import corner_table as cnt
+
+
+# triangles from the slides defining the corner table data structure
+tr1 = [(0,1), (1,0), (2,2,),]
+tr2 = [(2,2), (1,0), (3,1,),]
+tr3 = [(2,2), (3,1), (4,2,),]
+tr4 = [(3,1), (5,0), (4,2,),]
+
+imp.reload(cnt)
+c_table = cnt.CornerTable()
+c_table.add_triangle(tr1)
+c_table.add_triangle(tr2)
+c_table.add_triangle(tr3)
+c_table.add_triangle(tr4)
+
+# should return the first triangle
+c_table.find_triangle((1,1))
+
+# should return the second triangle
+c_table.find_triangle((2,1))
+
+# should return the third triangle
+c_table.find_triangle((3,1.5))
+
+# should return the forth triangle
+c_table.find_triangle((4,1))
+
+
+		"""
+		self._vt_hash
+		self._fc_hash
+		self._cn_table
+		tr_ret = -1
+		# performs the search over all triangles in an random order
+		# TODO it is possible to improve this searching looking for the big triangles first
+		# 	maybe change the probability of the sampling by the area of the triangle
+		tr_ids = sample(range(len(self._fc_hash)), size=len(self._fc_hash), replace=False, p=None)
+		tr_tested = []
+#		for tr_i in :
+		while len(tr_ids) > 0:
+			tr_i = tr_ids[0]
+			tr_ids = tr_ids[1:]
+			# if the current triangle was already tested continue
+			if tr_i in tr_tested:
+				continue
+			tr_tested.append(tr_i)
+			# get the vertices of the given triangle
+#			v0, v1, v2 = self._cn_table[self._fc_hash[tr_i], 1]
+			c0 = self._fc_hash[tr_i][0]
+			# get the physical coordinate of the 3 vertices given their "virtual" indices
+			v0, v1, v2 = self._cn_table[[c0, self._cn_table[c0, 3], self._cn_table[c0, 4]], 1]
+			P_v0, P_v1, P_v2 = array(self._coord_hash['vir'])[ [v0,v1,v2] ]
+			# perform the incircle test
+			# if false continue
+			# ATTENTION garantee the order of the vertices are correct
+			if not self.inCircle([P_v0, P_v1, P_v2, point]):
+				continue
+			# get the triangles sharing edges
+			#	maybe I should get all triangles with that share vertices, the clousure
+			tr_cls = self.closure(fc=[tr_i])
+			# for each selected triangle, there are 4 of them, find the baricentric coordinates
+			# of the query point
+			for tr in tr_cls['faces']:
+				c0 = self._fc_hash[tr][0]
+				v0, v1, v2 = self._cn_table[[c0, self._cn_table[c0, 3], self._cn_table[c0, 4]], 1]
+				P_v0, P_v1, P_v2 = array(self._coord_hash['vir'])[ [v0,v1,v2] ]
+				bari_c = self.bari_coord([P_v0, P_v1, P_v2], point)
+				# if all baricentric coordinates are positive it mean the point is inside this triangle
+				if bari_c[0] * bari_c[1] * bari_c[2] >= 0:
+					
+					return {'face':tr, 'vertices':[v0,v1,v2], 'bari':bari_c}
+					break
+			
+			# dont need this, since if the incircle test returns ok then the point will be find in this iteration
+#			[tr_tested.append(i) for i in tr_cls[]]
+		return {'face':-1, 'vertices':(), 'bari':()}
+		return tr_ret
+
+	
+	@staticmethod
+	def bari_coord(points, query_pt):
+		"""
+###
+# Determine the baricentric coordinates of the query point
+###
+# points:	List. Each element is a 2-dimensional point. The points should the in a counterclockwise orientation
+# query_pt:	Tuple. The query point that will have its baricentric coordinate computed
+###
+# Return a tuple with the baricentric coordinate
+
+		"""
+		A = [[1, 1, 1], [points[0][0], points[1][0], points[2][0], ], [points[0][1], points[1][1], points[2][1], ]]
+		return solve(A, (1, query_pt[0], query_pt[1]))
+
+
+	@staticmethod
+	def inCircle(points):
+		"""
+###
+# Determine if the 4th point of the array of points lie inside or in the circle defined for the first 3 points
+###
+# points:	List. Each element is a 2-dimensional point. The points should the in a counterclockwise orientation
+###
+# Return True or False. The points should the in a counterclockwise orientation
+
+# TODO generalize to more dimensions
+		"""
+		mat = ndarray(buffer=ones(16), shape=(4,4))
+		pts = array(points)
+		mat[0:4, 0:2] = pts[0:4, 0:2]
+		mat[0:4, 2] = [sum([i**2 for i in p]) for p in pts]
+		
+		return det(mat) > 0
+
+
 
 	@staticmethod
 	def orientation(points):
@@ -75,10 +227,11 @@ class CornerTable:
 # Modify the current corner table
 # Internal method should be used outside of the class
 		"""
-		if not vertice in self._coord_hash.keys():
-			self._coord_hash[vertice] = len(self._coord_hash)
+		if not vertice in self._coord_hash['phys'].keys():
+			self._coord_hash['phys'][vertice] = len(self._coord_hash['phys'])
+			self._coord_hash['vir'].append(vertice)
 			self._vt_hash.append( [] )
-		return self._coord_hash[vertice]
+		return self._coord_hash['phys'][vertice]
 
 
 
@@ -95,6 +248,8 @@ class CornerTable:
 
 import corner_table as cnt
 
+
+# triangles from the slides defining the corner table data structure
 tr1 = [(0,1), (1,0), (2,2,),]
 tr2 = [(2,2), (1,0), (3,1,),]
 tr3 = [(2,2), (3,1), (4,2,),]
@@ -103,6 +258,9 @@ tr4 = [(3,1), (5,0), (4,2,),]
 imp.reload(cnt)
 c_table = cnt.CornerTable()
 c_table.add_triangle(tr1)
+c_table.add_triangle(tr2)
+c_table.add_triangle(tr3)
+c_table.add_triangle(tr4)
 
 		"""
 		# garantee to have only 3 points
@@ -393,19 +551,18 @@ c_table.add_triangle(tr1)
 		return (vt_hash, fc_hash, cn_table)
 
 
-	def closure(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	def closure(self, vt=[], ed=[], fc=[]):
 		"""
 	####
 	# Get the closure for the vertices, edges and faces specified
 	###
-	# cnt:		The corner table
-	# vt_hash:	The vertices hash, given a vertex return the list of its corners
 	# vt:		List of vertices
 	# ed:		List of edges. Every edge is specified by a tuple containing its vertex, i.e., (V1, V2)
 	# fc:		List of faces. 
 	###
 	# 
 		"""
+		cnt, vt_hash = self._cn_table, self._vt_hash
 		closure = {'vertices': set(), 'edges':set(), 'faces':set()}
 		
 		# vertex closure is the vertex itself
@@ -442,9 +599,10 @@ c_table.add_triangle(tr1)
 
 
 
-	def star(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	def star(self, vt=[], ed=[], fc=[]):
 		"""
 		"""
+		cnt, vt_hash = self._cn_table, self._vt_hash
 		star = {'vertices':set(), 'edges':set(), 'faces':set()}
 		
 		# first break the faces and edges in its constituints
@@ -547,7 +705,8 @@ c_table.add_triangle(tr1)
 
 
 
-	def link(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	def link(self, vt=[], ed=[], fc=[]):
+		cnt, vt_hash = self._cn_table, self._vt_hash
 		link = {'vertices':set(), 'edges':set(), 'faces':set()}
 		
 		# TODO test if this approach does not have a complexity too high
@@ -575,7 +734,7 @@ c_table.add_triangle(tr1)
 
 
 
-	def ring_1(cnt, vt_hash, vt=[], ed=[], fc=[]):
+	def ring_1(self, vt=[], ed=[], fc=[]):
 		"""
 	####
 	# Get the 1-ring
@@ -585,7 +744,8 @@ c_table.add_triangle(tr1)
 	# Return the vertices of the link
 	# since the 1-ring is the set of vertices in the link
 		"""
-		return link(cnt=cnt, vt_hash=vt_hash, vt=vt, ed=ed, fc=fc)['vertices']
+		cnt, vt_hash = self._cn_table, self._vt_hash
+		return self.link(vt=vt, ed=ed, fc=fc)['vertices']
 
 
 
