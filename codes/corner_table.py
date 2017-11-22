@@ -49,26 +49,51 @@ class CornerTable:
 		self._vt_hash, self._fc_hash, self._cn_table = cnt[0], cnt[1], array(cnt[2])
 
 
-	def triangles_share_edge(self, fcs=[]):
+	def triangles_share_edge(self, eds=[], cns=[]):
 		"""
 ###
 # Get the triangles that share edges
 ###
-# fcs:	List. The list of triangles	
+# eds:	List. The list of edges
+# cns:	List. The list of corners
 ###
 # Return a list of triangles
 # It iterate over the vertices of each triangle in the order they were created
 		"""
 		trs = []
-		for f in fcs:
+		corners = cns
+		
+		# convert the edges to corners
+		if len(eds) > 0:
+			corners = []
+			for e in eds:
+				c0 = set(self._cn_table[self._vt_hash[e[1]], 4]).intersection( self._vt_hash[e[0]] )
+				# check if the edge exists
+				if len(c0) > 0:
+					c0 = co.pop()
+					c1 = self._cn_table[c0, 3]
+					corners.append( (c0,c1) )
+		
+		for c in corners:
+			# get the face of c0
+			f0 = self._cn_table[c[0], 2]
+			# get the face of the right corner of c0, that is equvalent to the opposite
+			# of the previous corner of c0
+			f1 = self._cn_table[ self._cn_table[c[0], 7] , 2]
+			trs.append((f0,f1))
+		return trs
+		
+		# THIS PART IS NOT USED ANYMORE
+		"""
 			# get the opposite corner (colunm 5) of the c0 (_fc_hash[f][0])
-			c0 = self._cn_table[self._fc_hash[f][0], 5]
+			c0 = self._cn_table[c[0], 5]
 			# get the opposite corners of the next and previous corners
 			cn, cp = self._cn_table[self._cn_table[c0, 3], 5], self._cn_table[self._cn_table[c0, 4], 5]
 			# get the faces of the opposite corners c0, cn and cp
 			fc0, fc1, fc2 = self._cn_table[[c0, cn, cp], 2]
 			trs.append((-1 if c0 == -1 else fc0, -1 if cn == -1 else fc1, -1 if cp == -1 else fc2))
 		return trs
+		"""
 	
 
 	def find_triangle(self, point):
@@ -233,6 +258,144 @@ c_table.find_triangle((4,1))
 			self._vt_hash.append( [] )
 		return self._coord_hash['phys'][vertice]
 
+
+
+
+
+	def split_triangles(self, face0, face1):
+		"""
+###
+# Perform the split of two adjacent triangles
+###
+# face0:	Number. The index of the face
+# face1:	Number. The index of the face
+###
+# Modify the current corner table
+# This method removes the edges between the two triangles and
+# add a new one between the opposing corners
+
+# Usage example:
+
+import corner_table as cnt
+
+
+# triangles from the slides defining the corner table data structure
+tr1 = [(0,1), (1,0), (2,2,),]
+tr2 = [(2,2), (1,0), (3,1,),]
+tr3 = [(2,2), (3,1), (4,2,),]
+tr4 = [(3,1), (5,0), (4,2,),]
+
+imp.reload(cnt)
+c_table = cnt.CornerTable()
+c_table.add_triangle(tr1)
+c_table.add_triangle(tr2)
+c_table.add_triangle(tr3)
+c_table.add_triangle(tr4)
+
+c_table.split_triangles(2, 3)
+		"""
+		
+		# TODO check if it is possible to split the triangles
+		
+		# TODO having problems when remove a triangle and a vertex is left hanging,
+		# this happens for triangles on the boundary
+
+		
+		# the easiest way to implement this is to remove both faces and add the new ones
+		
+		# first get the vertices
+		v0, v1, v2 = self._cn_table[self._fc_hash[face0], 1]
+		v3, v4, v5 = self._cn_table[self._fc_hash[face1], 1]
+		# get the vertices repeted between face0 and face1
+		v_rep_01 = list(set((v0,v1,v2)).intersection((v3,v4,v5)))
+		
+		# get the opposing vertices for faces 0 and 1
+		v_opp_0 = set((v3,v4,v5))
+		v_opp_1 = set((v0,v1,v2))
+		[v_opp_0.discard(i) for i in (v0,v1,v2)]
+		[v_opp_1.discard(i) for i in (v3,v4,v5)]
+		v_opp_0 = v_opp_0.pop()
+		v_opp_1 = v_opp_1.pop()
+		
+		print(('v0,v1,v2', v0,v1,v2))
+		print(('v3,v4,v5', v3,v4,v5))
+		print(('v_rep_01', v_rep_01))
+		print(('v_opp_0', v_opp_0))
+		print(('v_opp_1', v_opp_1))
+		
+		# build the new triangles
+		tr0 = [(v_opp_0, v_opp_1), (v_opp_1, v_rep_01[0]), (v_rep_01[0], v_opp_0)]
+		tr1 = [(v_opp_1, v_opp_0), (v_opp_0, v_rep_01[1]), (v_rep_01[1], v_opp_1)]
+		
+		print(('tr0', tr0))
+		print(('tr1', tr1))
+	
+		# remove face0 and face1 and add tr0 and tr1
+		self.remove_triangle(face0)
+		self.remove_triangle(face1)
+		self.add_triangle(tr0)
+		self.add_triangle(tr1)
+
+
+
+
+	def remove_triangle(self, face):
+		"""
+###
+# Remove a triangle from the Corner Table
+###
+# face:	Number. The index of the face
+###
+# Modify the current corner table
+
+# Usage example:
+
+import corner_table as cnt
+
+
+# triangles from the slides defining the corner table data structure
+tr1 = [(0,1), (1,0), (2,2,),]
+tr2 = [(2,2), (1,0), (3,1,),]
+tr3 = [(2,2), (3,1), (4,2,),]
+tr4 = [(3,1), (5,0), (4,2,),]
+
+imp.reload(cnt)
+c_table = cnt.CornerTable()
+c_table.add_triangle(tr1)
+c_table.add_triangle(tr2)
+c_table.add_triangle(tr3)
+c_table.add_triangle(tr4)
+
+c_table.remove_triangle(2)
+		"""
+		# get the corners of the given triangle
+		c0, c1, c2 = self._fc_hash[face]
+		# get the vertices of these corners
+		v0, v1, v2 = self._cn_table[[c0, c1, c2], 1]
+		
+#		print(('c0,c1,c2', c0, c1, c2))
+#		print(('v0,v1,v2', v0, v1, v2))
+		
+		# to remove this face just need to erase the entries regarding these corners
+		# from the hashs (fc_hash and vt_hash) and from the corner table
+		# meaning to set -1 to the first column of each line, c0, c1, c2
+		self._vt_hash[v0].remove(c0)
+		self._vt_hash[v1].remove(c1)
+		self._vt_hash[v2].remove(c2)
+		
+		self._fc_hash[face] = []
+		
+#		print(('self._vt_hash', self._vt_hash[v0], self._vt_hash[v1], self._vt_hash[v2]))
+#		print(('self._fc_hash', self._fc_hash[face]))
+		
+		# fix the surrounding faces
+		surrounding_faces = list(set([t[1] for t in self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0)))]))
+		surrounding_corners = array(self._fc_hash)[surrounding_faces]
+		self._cn_table[[c0,c1,c2], 0] = -1
+#		print(('surrounding_faces', surrounding_faces))
+#		print(('surrounding_corners', hstack(surrounding_corners)))
+#		print(('CN[c0,c1,c2]', self._cn_table[[c0,c1,c2],]))
+		self.fix_opposite_left_right(self._cn_table, self._vt_hash, ids=hstack(surrounding_corners))
 
 
 	def add_triangle(self, vertices):

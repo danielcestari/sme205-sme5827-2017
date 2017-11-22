@@ -33,10 +33,21 @@ def delaunay_triangulation(pts):
 		# get the triangle containing the point p
 		tr_p = cn_table.find_triangle(p)
 		v0, v1, v2 = tr_p['vertices']
-		# check if the point lies on an edge, just see if there is a zero within the baricentric coords
 		
 		# get the triangles sharing edges
-		tr_shar_ed = cn_table.triangles_share_edge(fcs=[tr_p['faces']])[0]
+		tr_shar_ed = cn_table.triangles_share_edge(eds=((v0,v1), (v1,v2), (v2,v0)))
+		
+		# check if the point lies on an edge, just see if there is a zero within the baricentric coords
+		
+		# determine the triangles to be added, if 3 or 4, and determine
+		# which triangles should be removed, if 1 or 2
+		
+		# remove the triangles
+		
+		
+		# add the triangles
+		
+		# legalize edges
 		
 	pass
 
