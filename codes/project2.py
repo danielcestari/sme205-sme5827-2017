@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import corner_table as cnt
 imp.reload(cnt)
 
-def delaunay_triangulation(pts):
+def delaunay_triangulation(pts, plot=False, legalize_plot=False):
 	"""
 #########################################
 # Perform the Delaunay triangulation a set of points
@@ -17,6 +17,72 @@ def delaunay_triangulation(pts):
 # points:	List. Each element is a n-dimensional point
 #########################################
 # Return a structure with the delaunay triangulation.
+
+# Usage example:
+
+# simple example
+import corner_table as cnt
+import project2 as pjt
+import imp
+
+pts = [(0,1), (3,1), (5,0), (2,2), (4,2), (1,0)]
+
+pts2 = [(0,1), (3,1), (5,0), (2,2), (4,2), (1,0), (3, 1.9)]
+
+outer_tr = [(5.0, 9.0777472107017552), (8.2455342898166109, -5.2039371148119731), (-5.7455342898166091, -0.87381009588978342)]
+
+imp.reload(pjt); dd = pjt.delaunay_triangulation(pts2)
+
+
+# example insert point into an edge
+import corner_table as cnt
+import project2 as pjt
+import imp
+
+pts = [(0,0), (1,0), (2,0), (0,1), (1,1), (2,1), (1,2), (1,3),]
+pts = [(1,3), (1,1), (1,2), (0,0), (1,0), (2,0), (0,1), (2,1),]
+pts = [(1,3), (1,1), (1,2)]
+
+outer_tr = [(5.0, 9.0777472107017552), (8.2455342898166109, -5.2039371148119731), (-5.7455342898166091, -0.87381009588978342)]
+
+pts2 = vstack((outer_tr, pts))
+
+imp.reload(pjt); dd = pjt.delaunay_triangulation(pts, legalize_plot=True)
+
+grd_truth = Delaunay(points=pts2, furthest_site=False, incremental=True)
+imp.reload(pjt); my_delaunay = pjt.delaunay_triangulation(pts)
+
+plt.subplot(1,2,1)
+plt.triplot(pts2[:,0], pts2[:,1], grd_truth.simplices.copy())
+plt.suptitle('Ground truth vs. My triangulation')
+my_delaunay.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
+
+plt.close('all')
+
+
+# example with random points
+import imp
+import project2 as pjt
+from scipy.spatial import Delaunay
+import matplotlib.pyplot as plt
+from numpy.random import uniform
+from numpy import array, matrix, vstack, ndarray
+
+# generate the random points with the outer triangle englobing them
+low, high, size = 0, 50, 100
+rd_pts = ndarray(buffer=uniform(low=low, high=high, size=2*size), dtype=float, shape=(size, 2))
+outer_pts = pjt.outer_triangle(rd_pts)
+rd_pts = vstack((outer_pts, rd_pts))
+
+
+grd_truth = Delaunay(points=rd_pts, furthest_site=False, incremental=True)
+imp.reload(pjt); my_delaunay = pjt.delaunay_triangulation([tuple(i) for i in rd_pts[3:]])
+
+plt.subplot(1,2,1)
+plt.triplot(rd_pts[:,0], rd_pts[:,1], grd_truth.simplices.copy())
+my_delaunay.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
+
+plt.close('all')
 
 	"""
 	# initialize the corner table
@@ -28,9 +94,11 @@ def delaunay_triangulation(pts):
 	cn_table.add_triangle(outer_tr)
 	# get a random permutation of the points
 	pts_sample = sample(range(len(pts)), size=len(pts), replace=False, p=None)
-	pts_sample = range(len(pts))
+#	pts_sample = range(len(pts))
+	cn_table.plot() if plot else 0
 	# iterate over all points
 	for p_i in pts_sample:
+		cn_table.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1}) if plot else 0
 		# p holds the physical position of the i-th point
 		p = pts[p_i]
 		print()
@@ -40,7 +108,10 @@ def delaunay_triangulation(pts):
 		v0, v1, v2 = tr_p['vertices']
 		
 		# get the triangles sharing edges
-		tr_shar_ed = cn_table.triangles_share_edge(eds=((v0,v1), (v1,v2), (v2,v0)))
+		tr_share_ed = cn_table.triangles_share_edge(eds=((v0,v1), (v1,v2), (v2,v0)))
+		print(('v0,v1,v2', v0,v1,v2, 'tr_share_ed', tr_share_ed))
+		print(('tr_p', tr_p))
+		print()
 		
 		# triangles to be added, in the case the point does not lie on some edge
 		add_faces = [
@@ -52,28 +123,34 @@ def delaunay_triangulation(pts):
 		# check if the point lies on an edge, just see if there is a zero within the baricentric coords
 		rem_faces = [ tr_p['face'] ]
 		if tr_p['bari'][0] * tr_p['bari'][1] * tr_p['bari'][2] == 0:
+			print('\n\nBARI ZERO\n\n')
 			# determine the triangles to be added, if 3 or 4, and determine
 			# which triangles should be removed, if 1 or 2
 			
 			# remove the triangle with zero area
 			add_faces.pop( 2 if tr_p['bari'][0] == 0 else 0 if tr_p['bari'][1] == 0 else 1 )
 			
+			index_bari_zero = 1 if tr_p['bari'][0] == 0 else 2 if tr_p['bari'][1] == 0 else 0
+			
 			# result in the opposing vertex of the vertex with baricentric coordinate zero
-			opposing_vertex = set(tr_share_ed['physical'][1])
-			[opposing_vertex.discard(v) for v in tr_p['physical']]
+			opposing_vertex = set(tr_share_ed['physical'][ index_bari_zero ][1])
+			[opposing_vertex.discard(tuple(v)) for v in tr_p['physical']]
 			opposing_vertex = tuple(opposing_vertex.pop())
 			
 			# add the 2 new triangles to be added
 			[add_faces.append([v, p, opposing_vertex]) 
-					for v in set(tr_share_ed['physical'][1]).intersection(tr_p['physical'])]
+					for v in set(tr_share_ed['physical'][ index_bari_zero ][1]).intersection([tuple(i) for i in tr_p['physical']])]
 			
+			[print(('ADD FACES', [v, p, opposing_vertex])) 
+					for v in set(tr_share_ed['physical'][ index_bari_zero ][1]).intersection([tuple(i) for i in tr_p['physical']])]
 			# define the faces to remove based on the zero of the baricentric coordinate
 			# if the first coordinate if zero, then remove the second triangle on the list tr_share_ed
 			# if the second coordinate if zero, then remove the third triangle on the list tr_share_ed
 			# if the third coordinate if zero, then remove the first triangle on the list tr_share_ed
-			rem_faces.append( tr_share_ed['faces'][ 
-								1 if tr_p['bari'][0] == 0 else 1 if tr_p['bari'][1] == 0 else 2 
-							])
+			rem_faces.append( tr_share_ed['faces'][ index_bari_zero ][1])
+			
+			print(('Bari zero',  ))
+			print(('REM FACE',  tr_share_ed['faces'][ index_bari_zero ][1]))
 #			tr_share_ed['faces'].pop( 
 #								0 if tr_p['bari'][0] == 0 else 1 if tr_p['bari'][1] == 0 else 2
 #								)
@@ -86,7 +163,7 @@ def delaunay_triangulation(pts):
 		added_faces = [cn_table.add_triangle(f) for f in add_faces]
 		
 		# legalize edges
-		print(('CN', cn_table._cn_table))
+#		print(('CN', cn_table._cn_table))
 		print(('ADDED_FACES', added_faces))
 #		check_faces = []
 #		for f in added_faces:
@@ -95,7 +172,8 @@ def delaunay_triangulation(pts):
 #										eds=((vs[0],vs[1]), (vs[1],vs[2]), (vs[2],vs[0])) )['virtual'] 
 #								)
 		# legalize using the inserted point and the 3/4 triangles added
-		[cn_table.legalize(point=p, face=f['face']) for f in added_faces]
+		[cn_table.legalize(point=p, face=f['face'], plot=legalize_plot) for f in added_faces]
+		cn_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2}) if plot else 0
 		
 	return cn_table
 

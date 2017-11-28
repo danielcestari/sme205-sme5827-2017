@@ -47,9 +47,52 @@ class CornerTable:
 			cnt = compute_corner_table(vertices=data[0], faces=data[1])
 		
 		self._vt_hash, self._fc_hash, self._cn_table = cnt[0], cnt[1], array(cnt[2])
+	
+
+
+	def test_delaunay(self):
+		"""
+
+# Usage example:
+
+rd_pts
+grd_truth
+
+
+imp.reload(cnt); pp = cnt.CornerTable()
+[pp.add_triangle([tuple(i) for i in rd_pts[t]]) for t in grd_truth.simplices]
+pp.plot()
+pp.test_delaunay()
+
+		"""
+		total_faces = 0
+		oriented_faces = 0
+		delaunay_faces = 0
+		for f in self._fc_hash:
+			if len(f) == 0:
+				continue
+			total_faces += 1
+			
+			c0,c1,c2 = f
+			c0_o,c1_o,c2_o = self._cn_table[[c0,c1,c2], 5]
+			
+			v0,v1,v2 = self._cn_table[[c0,c1,c2], 1]
+			v0_o,v1_o,v2_o = self._cn_table[[c0_o,c1_o,c2_o], 1]
+			
+			p_v0,p_v1,p_v2 = array(self._coord_hash['vir'])[[v0,v1,v2]]
+			p_v0_o,p_v1_o,p_v2_o = array(self._coord_hash['vir'])[[v0_o,v1_o,v2_o]]
+			
+			# compute the number of rightly oriented faces
+			oriented_faces += 1 if self.orientation([p_v0, p_v1, p_v2]) else 0
+			
+			# 
+			delaunay_faces += 1 if self.inCircle([p_v0, p_v1, p_v0_o, p_v2]) and self.inCircle([p_v1, p_v2, p_v1_o, p_v0]) and self.inCircle([p_v2, p_v0, p_v2_o, p_v1]) else 0
+		
+		return (total_faces, oriented_faces, delaunay_faces)
+
 
 	
-	def legalize(self, point, face):
+	def legalize(self, point, face, plot=False):
 		"""
 ###
 # Verify if the edge need to be legalized and do
@@ -58,6 +101,31 @@ class CornerTable:
 # face:		Integer. The number of the added triangle
 ###
 # Modify the corner table
+
+# Usage example:
+
+
+import corner_table as cnt
+
+
+# triangles from the slides defining the corner table data structure
+tr1 = [(0,1), (1,0), (2,2,),]
+tr2 = [(2,2), (1,0), (3,1,),]
+tr3 = [(2,2), (3,1), (4,2,),]
+tr4 = [(3,1), (5,0), (4,2,),]
+tr5 = [(1,0), (5,0), (3,1,),]
+
+imp.reload(cnt)
+c_table = cnt.CornerTable()
+c_table.add_triangle(tr1)
+c_table.add_triangle(tr2)
+c_table.add_triangle(tr3)
+c_table.add_triangle(tr4)
+c_table.add_triangle(tr5)
+
+#c_table.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1})
+c_table.legalize(point=(0,1), face=0, plot=True)
+#c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		"""
 		# get the index of the added vertex
 		vi = self._coord_hash['phys'][point]
@@ -68,24 +136,53 @@ class CornerTable:
 #		if len(corners) == 0:
 #			return True
 		v0, v1, v2 = self._cn_table[corners, 1]
-		opposite_edge = set([v0,v1,v2])
-		opposite_edge.discard(vi)
-		opposite_edge = list(opposite_edge)
+#		opposite_edge = set([v0,v1,v2])
+#		opposite_edge.discard(vi)
+#		opposite_edge = list(opposite_edge)
+#		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, 'opposite_edge', opposite_edge))
+		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, ))
 		
+
 		# maybe dont need this
-#		ci = corners[ [v0,v1,v2].index(vi) ]
-#		opposite_vertex = self._cn_table[self._cn_table[ci, 5], 1]
+		# get the corner of point
+		if not(vi == v0 or vi == v1 or vi == v2):
+			return True
+		ci = corners[ [v0,v1,v2].index(vi) ]
+		# get the opposite vertex of ci		
+		ci_opp = self._cn_table[ci, 5]
+		# if there is no opposite vertex the bondaury was reached
+		if ci_opp == -1:
+			return True
+		# get the vertex index for the oppositve corner of ci
+		opposite_vertex = self._cn_table[ci_opp, 1]
 
 		P_v0, P_v1, P_v2 = array(self._coord_hash['vir'])[[v0,v1,v2]]
-		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, 'opposite_edge', opposite_edge))
 #		return True
 		# check if the 4 points are in a legal arrengement
-		if self.inCircle([P_v0, P_v1, P_v2, point]):
+		oriented_pts = array([P_v2, P_v0, P_v1, self._coord_hash['vir'][opposite_vertex] ])
+		
+		print('\n\t\t\tOrientation %s'%(self.orientation(oriented_pts)))
+		print(('oriented_pts', oriented_pts))
+#		plt.plot(oriented_pts[:,0], oriented_pts[:,1]); [plt.text(p[0], p[1], str(i)) for i,p in enumerate(oriented_pts)]; plt.show(); plt.close('all')
+		print()
+		if self.inCircle(oriented_pts):
 			# perform the edge flip
-			faces = self.triangles_share_edge(eds=[opposite_edge])['faces'][0]
+#			faces = self.triangles_share_edge(eds=[opposite_edge])['faces']
+			faces = (self._cn_table[ci, 2], self._cn_table[ci_opp, 2])
 			print(faces)
+#			if len(faces) == 0:
+#				return True
+#			faces = faces[0]
 			# before perform the slip get the MAYBE DONT NEED
+			self.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1}) if plot else 0
 			flipped_fcs = self.flip_triangles(faces[0], faces[1])
+			
+			print(('flipped_fcs', flipped_fcs))
+			self.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2}) if plot else 0
+#			input('waiting')
+			print()
+			if flipped_fcs[0]['face'] > 100:
+				return True
 			
 			# call legalize for the 2 other edges
 			self.legalize(point, flipped_fcs[0]['face'])
@@ -356,7 +453,9 @@ c_table.add_triangle(tr3)
 c_table.add_triangle(tr4)
 c_table.add_triangle(tr5)
 
+c_table.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1})
 c_table.flip_triangles(1, 2)
+c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		"""
 		
 		# TODO check if it is possible to split the triangles
@@ -1094,25 +1193,28 @@ c_table.add_triangle(tr4)
 		plt.close('all')
 		plt.show()
 		
-	def plot(self):
+	def plot(self, show=True, subplot=None):
 		import matplotlib.pyplot as plt
 		edges = []
 		for f in self._fc_hash:
 			if len(f) == 0:
 				continue
 			# get the vertices indexes for every face, the ones not excluded
-			print(('f', f))
-			print(('self._cn_table[f, 1]', self._cn_table[f, 1]))
+#			print(('f', f))
+#			print(('self._cn_table[f, 1]', self._cn_table[f, 1]))
 			v0,v1,v2 = self._cn_table[f, 1]
 			# get the physical position of the vertices
 			p0,p1,p2 = array(self._coord_hash['vir'])[ self._cn_table[f, 1] ]
-			print((' p0', p0, ' p1', p1, ' p2', p2 ))
+#			print((' p0', p0, ' p1', p1, ' p2', p2 ))
 #			edges.append(((p0,p1), (p1,p2), (p2,p0)))
 			edges.append((p0,p1,p2,p0))
 		edges = array(edges)
-		print(('edges', edges))
+#		print(('edges', edges))
+		if subplot:
+			plt.subplot(subplot['nrows'], subplot['ncols'], subplot['num'])
 		[plt.plot(e[:,0], e[:,1]) for e in edges]
-		plt.show()
-		plt.close('all')
+		if show:
+			plt.show()
+			plt.close('all')
 		return edges
 		
