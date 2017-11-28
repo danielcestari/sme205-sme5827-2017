@@ -48,6 +48,50 @@ class CornerTable:
 		
 		self._vt_hash, self._fc_hash, self._cn_table = cnt[0], cnt[1], array(cnt[2])
 
+	
+	def legalize(self, point, face):
+		"""
+###
+# Verify if the edge need to be legalized and do
+###
+# point:	Tuple. The physical coordinates of the added point
+# face:		Integer. The number of the added triangle
+###
+# Modify the corner table
+		"""
+		# get the index of the added vertex
+		vi = self._coord_hash['phys'][point]
+		print(('point', point, 'face', face, 'vi', vi))
+		
+		# get the vertices of the given face
+		corners = self._fc_hash[face]
+#		if len(corners) == 0:
+#			return True
+		v0, v1, v2 = self._cn_table[corners, 1]
+		opposite_edge = set([v0,v1,v2])
+		opposite_edge.discard(vi)
+		opposite_edge = list(opposite_edge)
+		
+		# maybe dont need this
+#		ci = corners[ [v0,v1,v2].index(vi) ]
+#		opposite_vertex = self._cn_table[self._cn_table[ci, 5], 1]
+
+		P_v0, P_v1, P_v2 = array(self._coord_hash['vir'])[[v0,v1,v2]]
+		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, 'opposite_edge', opposite_edge))
+#		return True
+		# check if the 4 points are in a legal arrengement
+		if self.inCircle([P_v0, P_v1, P_v2, point]):
+			# perform the edge flip
+			faces = self.triangles_share_edge(eds=[opposite_edge])['faces'][0]
+			print(faces)
+			# before perform the slip get the MAYBE DONT NEED
+			flipped_fcs = self.flip_triangles(faces[0], faces[1])
+			
+			# call legalize for the 2 other edges
+			self.legalize(point, flipped_fcs[0]['face'])
+			self.legalize(point, flipped_fcs[1]['face'])
+
+
 
 	def triangles_share_edge(self, eds=[], cns=[]):
 		"""
@@ -268,8 +312,8 @@ c_table.find_triangle((4,1))
 # Modify the current corner table
 # Internal method should be used outside of the class
 		"""
-		print(('VERTICE', vertice))
-		print(('_coord_hash', self._coord_hash))
+#		print(('VERTICE', vertice))
+#		print(('_coord_hash', self._coord_hash))
 		if not tuple(vertice) in self._coord_hash['phys'].keys():
 			self._coord_hash['phys'][vertice] = len(self._coord_hash['phys'])
 			self._coord_hash['vir'].append(vertice)
@@ -355,9 +399,10 @@ c_table.flip_triangles(1, 2)
 		# remove face0 and face1 and add tr0 and tr1
 		self.remove_triangle(face0)
 		self.remove_triangle(face1)
-		self.add_triangle(tr0)
-		self.add_triangle(tr1)
+		face0 = self.add_triangle(tr0)
+		face1 = self.add_triangle(tr1)
 
+		return (face0, face1)
 
 
 
@@ -484,8 +529,8 @@ c_table.add_triangle(tr4)
 					]
 		
 		# add to the structure and calls fix to garantee consistency
-		print(self._cn_table)
-		print(cn_triangle)
+#		print(self._cn_table)
+#		print(cn_triangle)
 		self._cn_table = vstack([ self._cn_table, cn_triangle ]) if len(self._cn_table) != 0 else array(cn_triangle)
 		
 #		[self._vt_hash.append( [v[0], v[1], v[2] if len(v) == 2 else 1] ) for v in vts]
@@ -506,14 +551,15 @@ c_table.add_triangle(tr4)
 							hstack(c_ids),
 							list(set(hstack([self._fc_hash[fc] for ci in c_ids for fc in self._cn_table[ci, 2]]))),
 						]))
-		print(('fix_ids', fix_ids))
-		print(self._cn_table)
-		print(self._vt_hash)
+#		print(('fix_ids', fix_ids))
+#		print(self._cn_table)
+#		print(self._vt_hash)
 #		print(self._cn_table[fix_ids])
 #		print(array(self._vt_hash)[fix_ids])
 		self.fix_opposite_left_right(self._cn_table, self._vt_hash, fix_ids)
 		
-		return {'face': len(self._fc_hash), 'vertices': (v0,v1,v2)}
+#		return {'face': len(self._fc_hash), 'vertices': (v0,v1,v2)}
+		return {'face': fc_id, 'vertices': (v0,v1,v2)}
 		
 
 	@staticmethod	

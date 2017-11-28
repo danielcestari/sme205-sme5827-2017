@@ -87,21 +87,22 @@ def delaunay_triangulation(pts):
 		
 		# legalize edges
 		print(('CN', cn_table._cn_table))
-		check_faces = []
-		for f in added_faces:
-			vs = f['vertices']
-			check_faces.append( cn_table.triangles_share_edge(
-										eds=((vs[0],vs[1]), (vs[1],vs[2]), (vs[2],vs[0])) )['virtual'] 
-								)
-		legalize(check_faces)
+		print(('ADDED_FACES', added_faces))
+#		check_faces = []
+#		for f in added_faces:
+#			vs = f['vertices']
+#			check_faces.append( cn_table.triangles_share_edge(
+#										eds=((vs[0],vs[1]), (vs[1],vs[2]), (vs[2],vs[0])) )['virtual'] 
+#								)
+		# legalize using the inserted point and the 3/4 triangles added
+		[cn_table.legalize(point=p, face=f['face']) for f in added_faces]
 		
 	return cn_table
 
 
-def legalize(face0, face1):
+def legalize(edge):
 	print('\nLEGALIZE')
-	print(face0)
-	print(face1)
+	print(edge)
 	print()
 
 
