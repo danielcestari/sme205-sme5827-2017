@@ -40,13 +40,81 @@ class CornerTable:
 ###
 # return an initialized Corner Table object
 		"""
-		cnt = ([], [], [], {'phys':{}, 'vir':[]})
-		if filename:
-			data = read_vtk(filename)
-			# TODO check the orientation of the read triangles
-			cnt = compute_corner_table(vertices=data[0], faces=data[1])
+	
+
+
+	def _clean_table(self, corners, face):
+		"""
+###
+# Clean the remove corners, triangles and vertices
+###
+# 
+###
+# Modify the corner table inplace
+		"""
+		# before exclude the row from the corner table
+		# save the opposite corner
+		# and get the corners of the faces sharing edges
+		# make a list with these corners and call fix_opposite_left_right
 		
-		self._vt_hash, self._fc_hash, self._cn_table, self._coord_hash = cnt[0], cnt[1], array(cnt[2]), cnt[3]
+		# THIS WAS ALREADY DONE, otherwise the table would be inconsistent
+
+		# create a hash that store the amount that should be subtracted from 
+		# the corner on the i-th position
+		rem_corners = self._cn_table[:,0] == -1
+		subtract_c = rem_corners.cumsum()
+#		corners_values = list(range(len(self._cn_table)))
+		corners_values = [i - subtract_c[i] for i in range(len(self._cn_table))]
+		# set the last value as -1, so every time a corner is -1 (meaning the corner was not defined)
+		# it returns -1
+		corners_values.append(-1)
+		valid_corners = rem_corners == False
+		
+		# build the same hash as for the corners but to subtract the face's index
+		rem_faces = array([len(f) for f in self._fc_hash]) == 0
+		subtract_f = rem_faces.cumsum()
+		new_faces = []
+		print(('new_faces', len(new_faces)))
+		print(('new_faces', array(new_faces).shape))
+		
+		# new vertex hash
+		new_vertices = [[] for i in range(len(self._vt_hash))]
+		
+		# now iterate over the corner table subtracting from the corners
+		for ci in self._cn_table:
+			if ci[0] == -1:
+				continue
+			"""
+			ci[0] = ci[0] - subtract_c[ci[0]]
+			ci[2] = ci[2] - subtract_f[ci[2]]
+			ci[3] = ci[3] - subtract_c[ci[3]]
+			ci[4] = ci[4] - subtract_c[ci[4]]
+			ci[5] = ci[5] - subtract_c[ci[5]]
+			ci[6] = ci[6] - subtract_c[ci[6]]
+			ci[7] = ci[7] - subtract_c[ci[7]]
+			"""
+			ci[0], ci[3] = corners_values[ ci[0] ], corners_values[ ci[3] ]
+			ci[4], ci[5] = corners_values[ ci[4] ], corners_values[ ci[5] ]
+			ci[6], ci[7] = corners_values[ ci[6] ], corners_values[ ci[7] ]
+			ci[2] = ci[2] - subtract_f[ci[2]]
+			
+			# update the _fc_hash values
+			if ci[2] >= len(new_faces):
+				new_faces.append([])
+			new_faces[ci[2]].append(ci[0])
+		
+			# update the _vt_hash values
+			new_vertices[ci[1]].append(ci[0])
+		
+		# keep only the valid corners
+		self._cn_table = self._cn_table[valid_corners]
+		
+		
+		self._vt_hash = new_vertices
+		
+		# clean the faces indices
+#		[self._fc_hash.pop(i) for i,f in enumerate(self._fc_hash) if len(f) == 0]
+		self._fc_hash = new_faces
 	
 
 
