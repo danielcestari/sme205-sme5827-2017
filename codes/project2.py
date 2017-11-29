@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import corner_table as cnt
 imp.reload(cnt)
 
-def delaunay_triangulation(pts, plot=False, legalize_plot=False):
+def delaunay_triangulation(pts, plot=False, legalize_plot=False, legalize=True):
 	"""
 #########################################
 # Perform the Delaunay triangulation a set of points
@@ -63,13 +63,17 @@ plt.close('all')
 # example with random points
 import imp
 import project2 as pjt
+import corner_table as cnt
 from scipy.spatial import Delaunay
 import matplotlib.pyplot as plt
 from numpy.random import uniform
 from numpy import array, matrix, vstack, ndarray
 
+imp.reload(cnt);
+imp.reload(pjt)
+
 # generate the random points with the outer triangle englobing them
-low, high, size = 0, 50, 100
+low, high, size = 0, 50, 200
 rd_pts = ndarray(buffer=uniform(low=low, high=high, size=2*size), dtype=float, shape=(size, 2))
 outer_pts = pjt.outer_triangle(rd_pts)
 rd_pts = vstack((outer_pts, rd_pts))
@@ -83,6 +87,11 @@ plt.triplot(rd_pts[:,0], rd_pts[:,1], grd_truth.simplices.copy())
 my_delaunay.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 
 plt.close('all')
+
+grd_table = cnt.CornerTable()
+a=[grd_table.add_triangle([tuple(i) for i in rd_pts[t]]) for t in grd_truth.simplices]
+my_delaunay.test_delaunay()
+grd_table.test_delaunay()
 
 	"""
 	# initialize the corner table
@@ -101,17 +110,17 @@ plt.close('all')
 		cn_table.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1}) if plot else 0
 		# p holds the physical position of the i-th point
 		p = pts[p_i]
-		print()
-		print(('p_i', p_i, 'p', p))
+#		print()
+#		print(('p_i', p_i, 'p', p))
 		# get the triangle containing the point p
 		tr_p = cn_table.find_triangle(p)
 		v0, v1, v2 = tr_p['vertices']
 		
 		# get the triangles sharing edges
 		tr_share_ed = cn_table.triangles_share_edge(eds=((v0,v1), (v1,v2), (v2,v0)))
-		print(('v0,v1,v2', v0,v1,v2, 'tr_share_ed', tr_share_ed))
-		print(('tr_p', tr_p))
-		print()
+#		print(('v0,v1,v2', v0,v1,v2, 'tr_share_ed', tr_share_ed))
+#		print(('tr_p', tr_p))
+#		print()
 		
 		# triangles to be added, in the case the point does not lie on some edge
 		add_faces = [
@@ -123,7 +132,7 @@ plt.close('all')
 		# check if the point lies on an edge, just see if there is a zero within the baricentric coords
 		rem_faces = [ tr_p['face'] ]
 		if tr_p['bari'][0] * tr_p['bari'][1] * tr_p['bari'][2] == 0:
-			print('\n\nBARI ZERO\n\n')
+			print('\n\n\t\t\t\t\tBARI ZERO\n\n')
 			# determine the triangles to be added, if 3 or 4, and determine
 			# which triangles should be removed, if 1 or 2
 			
@@ -172,7 +181,7 @@ plt.close('all')
 #										eds=((vs[0],vs[1]), (vs[1],vs[2]), (vs[2],vs[0])) )['virtual'] 
 #								)
 		# legalize using the inserted point and the 3/4 triangles added
-		[cn_table.legalize(point=p, face=f['face'], plot=legalize_plot) for f in added_faces]
+		[cn_table.legalize(point=p, face=f['face'], plot=legalize_plot) for f in added_faces] if legalize else 0
 		cn_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2}) if plot else 0
 		
 	return cn_table

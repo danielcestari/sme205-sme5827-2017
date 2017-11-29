@@ -40,18 +40,24 @@ class CornerTable:
 ###
 # return an initialized Corner Table object
 		"""
-		cnt = ([], [], [])
+		cnt = ([], [], [], {'phys':{}, 'vir':[]})
 		if filename:
 			data = read_vtk(filename)
 			# TODO check the orientation of the read triangles
 			cnt = compute_corner_table(vertices=data[0], faces=data[1])
 		
-		self._vt_hash, self._fc_hash, self._cn_table = cnt[0], cnt[1], array(cnt[2])
+		self._vt_hash, self._fc_hash, self._cn_table, self._coord_hash = cnt[0], cnt[1], array(cnt[2]), cnt[3]
 	
 
 
 	def test_delaunay(self):
 		"""
+###
+# Test if the Delaunay triangulation if ok
+###
+# 
+###
+# return a dict with the number of total faces, oriented faces, and delaunay faces
 
 # Usage example:
 
@@ -88,7 +94,7 @@ pp.test_delaunay()
 			# 
 			delaunay_faces += 1 if self.inCircle([p_v0, p_v1, p_v0_o, p_v2]) and self.inCircle([p_v1, p_v2, p_v1_o, p_v0]) and self.inCircle([p_v2, p_v0, p_v2_o, p_v1]) else 0
 		
-		return (total_faces, oriented_faces, delaunay_faces)
+		return {'total_faces':total_faces, 'oriented_faces':oriented_faces, 'delaunay_faces':delaunay_faces}
 
 
 	
@@ -140,7 +146,7 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 #		opposite_edge.discard(vi)
 #		opposite_edge = list(opposite_edge)
 #		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, 'opposite_edge', opposite_edge))
-		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, ))
+#		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, ))
 		
 
 		# maybe dont need this
@@ -148,6 +154,12 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 		if not(vi == v0 or vi == v1 or vi == v2):
 			return True
 		ci = corners[ [v0,v1,v2].index(vi) ]
+		
+		# reassign v0,v1,v2 to garantee that the order is correct, i.e., they are oriented
+		v0 = self._cn_table[ci, 1]
+		v1 = self._cn_table[self._cn_table[ci, 3], 1]
+		v2 = self._cn_table[self._cn_table[ci, 4], 1]
+		
 		# get the opposite vertex of ci		
 		ci_opp = self._cn_table[ci, 5]
 		# if there is no opposite vertex the bondaury was reached
@@ -157,19 +169,27 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 		opposite_vertex = self._cn_table[ci_opp, 1]
 
 		P_v0, P_v1, P_v2 = array(self._coord_hash['vir'])[[v0,v1,v2]]
+		P_v_opp = self._coord_hash['vir'][opposite_vertex]
 #		return True
 		# check if the 4 points are in a legal arrengement
-		oriented_pts = array([P_v2, P_v0, P_v1, self._coord_hash['vir'][opposite_vertex] ])
+		oriented_pts = array([P_v2, P_v0, P_v1, P_v_opp ])
+		oriented_pts = [P_v2, P_v0, P_v1, P_v_opp ]
+#		if not self.orientation([P_v2, P_v0, P_v1]):
+#			erro
+#			oriented_pts = [P_v_opp, P_v2, P_v0, P_v1 ]
+#			oriented_pts.reverse()
+
 		
-		print('\n\t\t\tOrientation %s'%(self.orientation(oriented_pts)))
-		print(('oriented_pts', oriented_pts))
+#		print('\n\t\t\tOrientation %s, %s'%(self.orientation2([P_v2, P_v0, P_v1]), tuple([P_v2, P_v0, P_v1])))
+#		print('\n\t\t\tinCircle %s %s'%(self.inCircle2(oriented_pts), oriented_pts))
+#		print(('oriented_pts', oriented_pts))
 #		plt.plot(oriented_pts[:,0], oriented_pts[:,1]); [plt.text(p[0], p[1], str(i)) for i,p in enumerate(oriented_pts)]; plt.show(); plt.close('all')
 		print()
 		if self.inCircle(oriented_pts):
 			# perform the edge flip
 #			faces = self.triangles_share_edge(eds=[opposite_edge])['faces']
 			faces = (self._cn_table[ci, 2], self._cn_table[ci_opp, 2])
-			print(faces)
+#			print(faces)
 #			if len(faces) == 0:
 #				return True
 #			faces = faces[0]
@@ -177,12 +197,12 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 			self.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1}) if plot else 0
 			flipped_fcs = self.flip_triangles(faces[0], faces[1])
 			
-			print(('flipped_fcs', flipped_fcs))
+#			print(('flipped_fcs', flipped_fcs))
 			self.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2}) if plot else 0
 #			input('waiting')
-			print()
-			if flipped_fcs[0]['face'] > 100:
-				return True
+#			print()
+#			if flipped_fcs[0]['face'] > 100:
+#				return True
 			
 			# call legalize for the 2 other edges
 			self.legalize(point, flipped_fcs[0]['face'])
@@ -298,13 +318,13 @@ c_table.find_triangle((4,1))
 		# 	maybe change the probability of the sampling by the area of the triangle
 		tr_ids = sample(range(len(self._fc_hash)), size=len(self._fc_hash), replace=False, p=None)
 		tr_tested = []
-		print(('FC_HASH', self._fc_hash))
-		print(('TR_IDS', tr_ids))
+#		print(('FC_HASH', self._fc_hash))
+#		print(('TR_IDS', tr_ids))
 #		for tr_i in :
 		while len(tr_ids) > 0:
 			tr_i = tr_ids[0]
 			tr_ids = tr_ids[1:]
-			print(('TR_I', tr_i))
+#			print(('TR_I', tr_i))
 			# if the current triangle was already tested continue
 			if tr_i in tr_tested or len(self._fc_hash[tr_i]) == 0:
 				continue
@@ -361,6 +381,15 @@ c_table.find_triangle((4,1))
 
 
 	@staticmethod
+	def inCircle2(points):
+		mat = ndarray(buffer=ones(16), shape=(4,4))
+		pts = array(points)
+		mat[0:4, 0:2] = pts[0:4, 0:2]
+		mat[0:4, 2] = [sum([i**2 for i in p]) for p in pts]
+		
+		return det(mat)
+
+	@staticmethod
 	def inCircle(points):
 		"""
 ###
@@ -380,6 +409,12 @@ c_table.find_triangle((4,1))
 		return det(mat) > 0
 
 
+
+	@staticmethod
+	def orientation2(points):
+		mat = ndarray(buffer=ones(len(points)**2), shape=(len(points), len(points)))
+		mat[0:len(points), 0:len(points[0])] = points
+		return det(mat)
 
 	@staticmethod
 	def orientation(points):
@@ -480,11 +515,11 @@ c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		v_opp_0 = v_opp_0.pop()
 		v_opp_1 = v_opp_1.pop()
 		
-		print(('v0,v1,v2', v0,v1,v2))
-		print(('v3,v4,v5', v3,v4,v5))
-		print(('v_rep_01', v_rep_01))
-		print(('v_opp_0', v_opp_0))
-		print(('v_opp_1', v_opp_1))
+#		print(('v0,v1,v2', v0,v1,v2))
+#		print(('v3,v4,v5', v3,v4,v5))
+#		print(('v_rep_01', v_rep_01))
+#		print(('v_opp_0', v_opp_0))
+#		print(('v_opp_1', v_opp_1))
 		
 		# build the new triangles
 		# I have to specify the physical position of the vertices, not the edges
@@ -492,8 +527,8 @@ c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		tr0 = [self._coord_hash['vir'][v_opp_1], self._coord_hash['vir'][v_opp_0], self._coord_hash['vir'][v_rep_01[0]]]
 		tr1 = [self._coord_hash['vir'][v_opp_0], self._coord_hash['vir'][v_opp_1], self._coord_hash['vir'][v_rep_01[1]]]
 		
-		print(('tr0', tr0))
-		print(('tr1', tr1))
+#		print(('tr0', tr0))
+#		print(('tr1', tr1))
 	
 		# remove face0 and face1 and add tr0 and tr1
 		self.remove_triangle(face0)
@@ -555,7 +590,7 @@ c_table.remove_triangle(2)
 #		print(('self._fc_hash', self._fc_hash[face]))
 		
 		# fix the surrounding faces
-		print(('AA', self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0))) ))
+#		print(('AA', self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0))) ))
 		surrounding_faces = list(set([t[1] for t in self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0)))['faces']]))
 #		surrounding_faces = [f for f in set([t[1] for t in self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0)))['faces']]) if f[0] != f[1]]
 		surrounding_corners = array(self._fc_hash)[surrounding_faces]
@@ -678,7 +713,7 @@ c_table.add_triangle(tr4)
 
 		# then compute the oposite, left and right corners
 #		for i in range(1, cn_table_length):
-		print(('FIX_ ids', ids))
+#		print(('FIX_ ids', ids))
 		for i in ids:
 			
 			ci = cn_table[i,:]
