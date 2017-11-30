@@ -40,10 +40,17 @@ class CornerTable:
 ###
 # return an initialized Corner Table object
 		"""
+		cnt = ([], [], [], {'phys':{}, 'vir':[]})
+		if filename:
+			data = read_vtk(filename)
+			# TODO check the orientation of the read triangles
+			cnt = compute_corner_table(vertices=data[0], faces=data[1])
+		
+		self._vt_hash, self._fc_hash, self._cn_table, self._coord_hash = cnt[0], cnt[1], array(cnt[2]), cnt[3]
 	
 
 
-	def _clean_table(self, corners, face):
+	def _clean_table(self, corners=0, face=0):
 		"""
 ###
 # Clean the remove corners, triangles and vertices
@@ -63,7 +70,6 @@ class CornerTable:
 		# the corner on the i-th position
 		rem_corners = self._cn_table[:,0] == -1
 		subtract_c = rem_corners.cumsum()
-#		corners_values = list(range(len(self._cn_table)))
 		corners_values = [i - subtract_c[i] for i in range(len(self._cn_table))]
 		# set the last value as -1, so every time a corner is -1 (meaning the corner was not defined)
 		# it returns -1
@@ -74,8 +80,6 @@ class CornerTable:
 		rem_faces = array([len(f) for f in self._fc_hash]) == 0
 		subtract_f = rem_faces.cumsum()
 		new_faces = []
-		print(('new_faces', len(new_faces)))
-		print(('new_faces', array(new_faces).shape))
 		
 		# new vertex hash
 		new_vertices = [[] for i in range(len(self._vt_hash))]
@@ -84,15 +88,6 @@ class CornerTable:
 		for ci in self._cn_table:
 			if ci[0] == -1:
 				continue
-			"""
-			ci[0] = ci[0] - subtract_c[ci[0]]
-			ci[2] = ci[2] - subtract_f[ci[2]]
-			ci[3] = ci[3] - subtract_c[ci[3]]
-			ci[4] = ci[4] - subtract_c[ci[4]]
-			ci[5] = ci[5] - subtract_c[ci[5]]
-			ci[6] = ci[6] - subtract_c[ci[6]]
-			ci[7] = ci[7] - subtract_c[ci[7]]
-			"""
 			ci[0], ci[3] = corners_values[ ci[0] ], corners_values[ ci[3] ]
 			ci[4], ci[5] = corners_values[ ci[4] ], corners_values[ ci[5] ]
 			ci[6], ci[7] = corners_values[ ci[6] ], corners_values[ ci[7] ]
@@ -113,7 +108,6 @@ class CornerTable:
 		self._vt_hash = new_vertices
 		
 		# clean the faces indices
-#		[self._fc_hash.pop(i) for i,f in enumerate(self._fc_hash) if len(f) == 0]
 		self._fc_hash = new_faces
 	
 
@@ -203,18 +197,10 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 		"""
 		# get the index of the added vertex
 		vi = self._coord_hash['phys'][point]
-		print(('point', point, 'face', face, 'vi', vi))
 		
 		# get the vertices of the given face
 		corners = self._fc_hash[face]
-#		if len(corners) == 0:
-#			return True
 		v0, v1, v2 = self._cn_table[corners, 1]
-#		opposite_edge = set([v0,v1,v2])
-#		opposite_edge.discard(vi)
-#		opposite_edge = list(opposite_edge)
-#		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, 'opposite_edge', opposite_edge))
-#		print(('vi', vi, 'v0,v1,v2', v0, v1, v2, ))
 		
 
 		# maybe dont need this
@@ -242,35 +228,16 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 		# check if the 4 points are in a legal arrengement
 		oriented_pts = array([P_v2, P_v0, P_v1, P_v_opp ])
 		oriented_pts = [P_v2, P_v0, P_v1, P_v_opp ]
-#		if not self.orientation([P_v2, P_v0, P_v1]):
-#			erro
-#			oriented_pts = [P_v_opp, P_v2, P_v0, P_v1 ]
-#			oriented_pts.reverse()
 
 		
-#		print('\n\t\t\tOrientation %s, %s'%(self.orientation2([P_v2, P_v0, P_v1]), tuple([P_v2, P_v0, P_v1])))
-#		print('\n\t\t\tinCircle %s %s'%(self.inCircle2(oriented_pts), oriented_pts))
-#		print(('oriented_pts', oriented_pts))
-#		plt.plot(oriented_pts[:,0], oriented_pts[:,1]); [plt.text(p[0], p[1], str(i)) for i,p in enumerate(oriented_pts)]; plt.show(); plt.close('all')
-		print()
 		if self.inCircle(oriented_pts):
 			# perform the edge flip
-#			faces = self.triangles_share_edge(eds=[opposite_edge])['faces']
 			faces = (self._cn_table[ci, 2], self._cn_table[ci_opp, 2])
-#			print(faces)
-#			if len(faces) == 0:
-#				return True
-#			faces = faces[0]
 			# before perform the slip get the MAYBE DONT NEED
 			self.plot(show=False, subplot={'nrows':1, 'ncols':2, 'num':1}) if plot else 0
 			flipped_fcs = self.flip_triangles(faces[0], faces[1])
 			
-#			print(('flipped_fcs', flipped_fcs))
 			self.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2}) if plot else 0
-#			input('waiting')
-#			print()
-#			if flipped_fcs[0]['face'] > 100:
-#				return True
 			
 			# call legalize for the 2 other edges
 			self.legalize(point, flipped_fcs[0]['face'])
@@ -311,8 +278,6 @@ c_table.legalize(point=(0,1), face=0, plot=True)
 			f1 = self._cn_table[ self._cn_table[c[0], 7] , 2]
 			trs['faces'].append((f0,f1))
 			
-#			print(('f0', f0, 'f1', f1))
-#			print(('self._fc_hash[f]', self._fc_hash[f]))
 			
 			trs['physical'].append([
 								[tuple(self._coord_hash['vir'][v]) 
@@ -377,28 +342,23 @@ c_table.find_triangle((4,1))
 
 
 		"""
-#		self._vt_hash
-#		self._fc_hash
-#		self._cn_table
+		
+		# TODO improve the way Castelo said in class
+		
 		tr_ret = -1
 		# performs the search over all triangles in an random order
 		# TODO it is possible to improve this searching looking for the big triangles first
 		# 	maybe change the probability of the sampling by the area of the triangle
 		tr_ids = sample(range(len(self._fc_hash)), size=len(self._fc_hash), replace=False, p=None)
 		tr_tested = []
-#		print(('FC_HASH', self._fc_hash))
-#		print(('TR_IDS', tr_ids))
-#		for tr_i in :
 		while len(tr_ids) > 0:
 			tr_i = tr_ids[0]
 			tr_ids = tr_ids[1:]
-#			print(('TR_I', tr_i))
 			# if the current triangle was already tested continue
 			if tr_i in tr_tested or len(self._fc_hash[tr_i]) == 0:
 				continue
 			tr_tested.append(tr_i)
 			# get the vertices of the given triangle
-#			v0, v1, v2 = self._cn_table[self._fc_hash[tr_i], 1]
 			c0 = self._fc_hash[tr_i][0]
 			# get the physical coordinate of the 3 vertices given their "virtual" indices
 			v0, v1, v2 = self._cn_table[[c0, self._cn_table[c0, 3], self._cn_table[c0, 4]], 1]
@@ -427,7 +387,6 @@ c_table.find_triangle((4,1))
 					break
 			
 			# dont need this, since if the incircle test returns ok then the point will be find in this iteration
-#			[tr_tested.append(i) for i in tr_cls[]]
 		return {'face':-1, 'vertices':(), 'bari':()}
 		return tr_ret
 
@@ -449,15 +408,6 @@ c_table.find_triangle((4,1))
 
 
 	@staticmethod
-	def inCircle2(points):
-		mat = ndarray(buffer=ones(16), shape=(4,4))
-		pts = array(points)
-		mat[0:4, 0:2] = pts[0:4, 0:2]
-		mat[0:4, 2] = [sum([i**2 for i in p]) for p in pts]
-		
-		return det(mat)
-
-	@staticmethod
 	def inCircle(points):
 		"""
 ###
@@ -476,13 +426,6 @@ c_table.find_triangle((4,1))
 		
 		return det(mat) > 0
 
-
-
-	@staticmethod
-	def orientation2(points):
-		mat = ndarray(buffer=ones(len(points)**2), shape=(len(points), len(points)))
-		mat[0:len(points), 0:len(points[0])] = points
-		return det(mat)
 
 	@staticmethod
 	def orientation(points):
@@ -512,8 +455,6 @@ c_table.find_triangle((4,1))
 # Modify the current corner table
 # Internal method should be used outside of the class
 		"""
-#		print(('VERTICE', vertice))
-#		print(('_coord_hash', self._coord_hash))
 		if not tuple(vertice) in self._coord_hash['phys'].keys():
 			self._coord_hash['phys'][vertice] = len(self._coord_hash['phys'])
 			self._coord_hash['vir'].append(vertice)
@@ -583,11 +524,6 @@ c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		v_opp_0 = v_opp_0.pop()
 		v_opp_1 = v_opp_1.pop()
 		
-#		print(('v0,v1,v2', v0,v1,v2))
-#		print(('v3,v4,v5', v3,v4,v5))
-#		print(('v_rep_01', v_rep_01))
-#		print(('v_opp_0', v_opp_0))
-#		print(('v_opp_1', v_opp_1))
 		
 		# build the new triangles
 		# I have to specify the physical position of the vertices, not the edges
@@ -595,8 +531,6 @@ c_table.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
 		tr0 = [self._coord_hash['vir'][v_opp_1], self._coord_hash['vir'][v_opp_0], self._coord_hash['vir'][v_rep_01[0]]]
 		tr1 = [self._coord_hash['vir'][v_opp_0], self._coord_hash['vir'][v_opp_1], self._coord_hash['vir'][v_rep_01[1]]]
 		
-#		print(('tr0', tr0))
-#		print(('tr1', tr1))
 	
 		# remove face0 and face1 and add tr0 and tr1
 		self.remove_triangle(face0)
@@ -642,8 +576,6 @@ c_table.remove_triangle(2)
 		# get the vertices of these corners
 		v0, v1, v2 = self._cn_table[[c0, c1, c2], 1]
 		
-#		print(('c0,c1,c2', c0, c1, c2))
-#		print(('v0,v1,v2', v0, v1, v2))
 		
 		# to remove this face just need to erase the entries regarding these corners
 		# from the hashs (fc_hash and vt_hash) and from the corner table
@@ -654,18 +586,11 @@ c_table.remove_triangle(2)
 		
 		self._fc_hash[face] = []
 		
-#		print(('self._vt_hash', self._vt_hash[v0], self._vt_hash[v1], self._vt_hash[v2]))
-#		print(('self._fc_hash', self._fc_hash[face]))
 		
 		# fix the surrounding faces
-#		print(('AA', self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0))) ))
 		surrounding_faces = list(set([t[1] for t in self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0)))['faces']]))
-#		surrounding_faces = [f for f in set([t[1] for t in self.triangles_share_edge(cns=((c0,c1), (c1,c2), (c2,c0)))['faces']]) if f[0] != f[1]]
 		surrounding_corners = array(self._fc_hash)[surrounding_faces]
 		self._cn_table[[c0,c1,c2], 0] = -1
-#		print(('surrounding_faces', surrounding_faces))
-#		print(('surrounding_corners', hstack(surrounding_corners)))
-#		print(('CN[c0,c1,c2]', self._cn_table[[c0,c1,c2],]))
 		self.fix_opposite_left_right(self._cn_table, self._vt_hash, ids=hstack(surrounding_corners))
 
 
@@ -731,11 +656,8 @@ c_table.add_triangle(tr4)
 					]
 		
 		# add to the structure and calls fix to garantee consistency
-#		print(self._cn_table)
-#		print(cn_triangle)
 		self._cn_table = vstack([ self._cn_table, cn_triangle ]) if len(self._cn_table) != 0 else array(cn_triangle)
 		
-#		[self._vt_hash.append( [v[0], v[1], v[2] if len(v) == 2 else 1] ) for v in vts]
 		
 		# INSERT THE TRIANGLE TO THE CORNER TABLE
 		# add the vertices, and the face, then calls fix_opposite_left_right 
@@ -753,11 +675,6 @@ c_table.add_triangle(tr4)
 							hstack(c_ids),
 							list(set(hstack([self._fc_hash[fc] for ci in c_ids for fc in self._cn_table[ci, 2]]))),
 						]))
-#		print(('fix_ids', fix_ids))
-#		print(self._cn_table)
-#		print(self._vt_hash)
-#		print(self._cn_table[fix_ids])
-#		print(array(self._vt_hash)[fix_ids])
 		self.fix_opposite_left_right(self._cn_table, self._vt_hash, fix_ids)
 		
 #		return {'face': len(self._fc_hash), 'vertices': (v0,v1,v2)}
