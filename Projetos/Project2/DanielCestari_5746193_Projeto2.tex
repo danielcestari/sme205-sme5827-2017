@@ -30,53 +30,69 @@
 
 \section{Introdução}
 
-O objetivo do Projeto 2 é o desenvolvimento de uma triangulação Delaunay 2D.  
+O objetivo do Projeto 2 é o desenvolvimento de uma triangulação \textit{Delaunay} 2D. 
 
-A entrada do algoritmo é um conjunto de pontos
+A definição de uma triangulação \textit{Delaunay} é uma triangulação de pontos tal que nenhum ponto do conjunto inicialmente fornecido está dentro do circuncirculo de qualquer triângulo da triangulação. Essa propriedade de nenhum ponto externo aos triângulos estar dentro do circuncirculo, garante que o mínimo ângulo dos triângulos será maximizado. É provado que dado um conjunto de pontos no espaço Euclidiano, a triangulação \textit{Delaunay} desses pontos é única, isso permite que a implementação deste trabalho possa ser testada utilizando outra biblioteca que já a implementa.
 
-A especificação do projeto pede para gerar uma malha dados, uma distância $D$ entre um círculo de raio $R$ e a borda esquerda do domínio retangular, o domínio tem comprimento $L$ e deve ser dividido em $k$ partições. Sendo que, uma dessas partições necessariamente precisa dividir o círculo em dois. O círculo deve estar centrado no domínio em termos da coordenada vertical. Também é pedido para refinar a malha ao redor do círculo e no centro do domínio à direita do círculo.
+A entrada do algoritmo é um conjunto de pontos, e como saída o programa retorna na representação de uma \textit{Corner table} a triangulação \textit{Delaunay}  dos pontos passados.  O algoritmo para a triangulação empregado foi o algoritmo de inserção de pontos incrementalmente com \textit{flip} de arestas.
 
-A maneira de como o círculo é gerado, como as partições e o refinamento são feitos não estão definidos, sendo livre a escolha.
+A estrutura de dados \textit{Corner table} foi implementada em atividade passadas da disciplina, mas até então possuía apenas operações de conjunta básica sobre os triângulos representados pela estrutura. Essas operações eram: fecho, estrela, anel, e \textit{link}. Para este trabalho foi necessário a inclusão de mais operações, como adição, remoção de triângulos, adição de vértices, busca de triângulos que compartilhem aresta, encontrar o triângulo que um dado ponto se encontra, coordenadas baricêntricas de um dado ponto, teste de orientação de pontos, teste do incirculo e \textit{flip} de arestas.
+
 
 
 \section{Implementação}
 
-Nesta seção é apresentada a implementação do código, e o porque de determinadas escolhas.
+Nesta seção é apresentada a implementação do código.
 
-Basicamente o código está dividido em 3 partes:
+Abaixo é apresentado o esquema geral da implementação:
 \begin{itemize}
-	\item \textbf{Geração da curva e domínio}: Nesta etapa é gerada a curva e os limites do domínio baseado nos parâmetros passados. Também é possível ler uma curva de um arquivo ou passar uma função que gere outra curva, tornando a implementação mais genérica.
+	\item Determinação de um triângulo contendo os dados fornecidos (triângulo externo);
 	
-	\item \textbf{Particionamento do domínio e determinação dos bordos}: Basicamente o particionamento do domínio tem apenas duas restrições, dividir a curva no meio e realizar um número $k+1$ de partições ($k$ é o parâmetro passado que determina quantos pontos de quebra o eixo $x$ tem).
-	Foram implementadas duas maneiras de determinação dos bordos, chamadas de heurística 1 e 2.
+	\item Inserção incremental dos pontos fornecidos;
+	\begin{itemize}
+			\item Correção dos triângulos pelo teste do incírculo e \textit{flip} de arestas;
+	\end{itemize}
 	
-	\item \textbf{Geração da malha}: Esta é a única etapa que utiliza código já implementado dos exercícios práticos. Após as várias partições serem geradas, cada uma têm sua malha gerada resolvendo a equação de \textit{Laplace} e ao final são unidas em duas malhas que são refinadas na região desejada.
+	\item Remoção de todos os triângulos com vértices do triângulo externo;
+	
+	\item Limpeza da estrutura de dados de objetos eliminados.
 	
 \end{itemize}
 
+Abaixo é exibida a função que calcula a triangulação:
+%%%%%%%%%%%%%%%%%%%%
+% def delaunay_triangulation
+\inputpython{project2.py}{12}{182}
+%%%%%%%%%%%%%%%%%%%%
+
+
+
 A seguir, cada etapa será descrita com mais detalhes.
 
+Na \textit{docstring} de cada método é apresentada uma descrição geral da função e de cada parâmetro.
 
-\subsection{Geração da curva e domínio}
+\subsection{Determinação do triângulo externo}
 
-A geração da curva, no caso um círculo, é realizada por uma função \textit{circle} que recebe 3 parâmetros. Abaixo é exibido o trecho do código com a função.
+Nesta etapa os pontos são centrado, é tomada a distância do ponto mais distante da origem como o raio de um círculo que engloba todos os pontos. Esse raio é definido como a coordenada $y$ do primeiro vértice do triângulo, a coordenada $x$ é definida como $0$. Para encontrar os outros dois pontos é feita uma rotação de $\frac{-2\pi}{3} rad$ do ponto inicial duas vezes. Por fim, aos pontos encontrados são levados para a localização inicial dos dados.
 
+A seguir é mostrado a função que calcula os vértices do triângulo externo.
 %%%%%%%%%%%%%%%%%%%%
-% def circle
-\inputpython{project1.py}{8}{20}
-%%%%%%%%%%%%%%%%%%%%
-
-A convenção adotada na geração da curva é começar do ponto mais a direita em $x$ e seguir o sentido anti-horário.
-Uma alternativa à geração do círculo, é a leitura de uma curva em arquivo, como o arquivo \textit{naca012.txt} já utilizado em um exercício prático, ou passar uma função que gere outra curva.
-
-%%%%%%%%%%%%%%%%%%%%
-% def generate_curve
-\inputpython{project1.py}{25}{75}
+% def outer_triangle
+\inputpython{project2.py}{224}{254}
 %%%%%%%%%%%%%%%%%%%%
 
 
-Na \textit{docstring} é apresentada uma descrição geral da função e de cada parâmetro.
-A função \textit{generate\_curve} retorna um dicionário com os pontos que definem o domínio e a curva.
+Próximas funções
+
+% find_triangles
+% triangle_share_edge
+% remove_triangle
+% add_triangle
+% legalize
+% _clean_table
+
+
+
 
 
 \subsection{Particionamento do domínio e determinação dos bordos}
@@ -86,7 +102,7 @@ Abaixo é mostrada a função.
 
 %%%%%%%%%%%%%%%%%%%%
 % def partitionate_domain
-\inputpython{project1.py}{438}{484}
+%\inputpython{project1.py}{438}{484}
 %%%%%%%%%%%%%%%%%%%%
 
 A diferença entre as duas heurísticas está na divisão feita sobre as partições que contém o círculo.
@@ -97,25 +113,10 @@ As figuras \ref{fig:heuristic1_top1} e \ref{fig:heuristic1_top2} mostram as malh
 Após a apresentação do trabalho foi incorporado o refinamento dos bordos na heurística 1, e foram removidas as singularidades, quadriláteros com um dos lados de comprimento zero.
 
 
- \begin{figure}[h]
- 	\centering
- 	\includegraphics[width=1.0\textwidth]{heuristica_1_50pts_top1.png}
- 	\label{fig:heuristic1_top1} 
- 	\caption[caption]{Malha gerada pela heurística 1 na primeira metade do círculo}
- \end{figure}
-
-
- \begin{figure}[h]
-	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_1_50pts_top2.png}
-	\label{fig:heuristic1_top2} 
-	\caption[caption]{Malha gerada pela heurística 1 na segunda metade do círculo}
-\end{figure}
-
 
 %%%%%%%%%%%%%%%%%%%%
 % def heuristic_1
-\inputpython{project1.py}{78}{256}
+%\inputpython{project1.py}{78}{256}
 %%%%%%%%%%%%%%%%%%%%
 
 
@@ -126,25 +127,10 @@ A heurística 2 difere da 1, na sua definição dos bordos sobre a partição da
 As figuras \ref{fig:heuristic2_top1} e \ref{fig:heuristic2_top2} mostram malhas geradas utilizando a heurística 2, as cores têm o mesmo significado que o relatado na heurística 1.
 
 
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts_top1.png}
-	\label{fig:heuristic2_top1} 
-	\caption[caption]{Malha gerada pela heurística 2 na primeira metade do círculo}
-\end{figure}
-
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts_top2.png}
-	\label{fig:heuristic2_top2} 
-	\caption[caption]{Malha gerada pela heurística 2 na segunda metade do círculo}
-\end{figure}
-
 
 %%%%%%%%%%%%%%%%%%%%
 % def heuristic_2
-\inputpython{project1.py}{260}{433}
+%\inputpython{project1.py}{260}{433}
 %%%%%%%%%%%%%%%%%%%%
 
 
@@ -158,7 +144,7 @@ Abaixo é apresentada a função \textit{generate\_grid}.
 
 %%%%%%%%%%%%%%%%%%%%
 % def generate_grid
-\inputpython{project1.py}{489}{729}
+%\inputpython{project1.py}{489}{729}
 %%%%%%%%%%%%%%%%%%%%
 
 O arquivo \textit{VTK} final é o resultado da união das duas malhas finais refinadas. Foi preciso modificar o código original que gerava o \textit{VTK} para receber uma lista de malhas e quando salvar em disco, produzir apenas um arquivo. Foi tomado o cuidado para vértices posicionados na mesma posição não aparecerem repetidos, ou seja, as malhas são realmente unidas.
@@ -223,88 +209,29 @@ filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle_h1_1
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_1_52pts_refined.png}
+	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex_outer.png}
 	\label{fig:heuristic1_50pts_refined} 
-	\caption[caption]{Malha gerada pela heurística 1 com 52 pontos com refinamento dos bordos.}
+	\caption[caption]{}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_1_100pts_refined.png}
+	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex_outer_zoom.png}
 	\label{fig:heuristic1_100pts_refined} 
-	\caption[caption]{Malha gerada pela heurística 1 com 100 pontos com refinamento.}
+	\caption[caption]{}
 \end{figure}
-
-
-
-
-
-
-\subsection{Heurística 2}
-
-
-
-Código para gerar uma malha com 25 pontos nos bordos esquerdo e direito. Curva gerada com 25 pontos, centrada na origem, domínio com comprimento 10, altura 8, e comprimento 3 à direita da curva. O domínio é divido em 4 partes, e o refinamento é feito ao redor da curva e após a curva no centro do domínio em relação à \textit{y}, ou $\eta$.
-
-\begin{verbatim}
-import imp
-import numpy as np
-from matplotlib import pyplot as plt
-import project1 as pjt
-
-imp.reload(pjt);  
-grid = pjt.generate_grid(resolution=25, left_border=3, domain_length=10, 
-domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
-filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle_h2_25pts", 
-xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[2.5], 
-a_xis1=[2.5], c_xis0=[5], c_xis1=[5], a_etas1=[0.5], c_etas1=[1], plot=True)
-\end{verbatim}
-
-Abaixo o código agora utilizando 50 pontos.
-\begin{verbatim}
-import imp
-import numpy as np
-from matplotlib import pyplot as plt
-import project1 as pjt
-
-imp.reload(pjt);  
-grid = pjt.generate_grid(resolution=50, left_border=3, domain_length=10, 
-domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
-filename_curve="", heuristic=pjt.heuristic_2, k=3, filename_borders="circle_h2_50pts", 
-xis_rf0=[1], xis_rf1=[0], etas_rf1=[0.45], a_xis0=[5], 
-a_xis1=[5], c_xis0=[5], c_xis1=[5], a_etas1=[1], c_etas1=[0.1], plot=True)
-\end{verbatim}
-
-
-%\begin{figure}[H]
-%	\centering
-%	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts.png}
-%	\label{fig:heuristic2_50pts} 
-%	\caption[caption]{Malha gerada pela heurística 2 com 25 pontos sem refinamento.}
-%\end{figure}
-%
-%\begin{figure}[H]
-%	\centering
-%	\includegraphics[width=1.0\textwidth]{heuristica_2_50pts.png}
-%	\label{fig:heuristic2_100pts} 
-%	\caption[caption]{Malha gerada pela heurística 2 com 50 pontos sem refinamento.}
-%\end{figure}
 
 
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_2_25pts_refined.png}
-	\label{fig:heuristic2_50pts_refined} 
-	\caption[caption]{Malha gerada pela heurística 2 com 25 pontos com refinamento.}
+	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex.png}
+	\label{fig:heuristic1_100pts_refined} 
+	\caption[caption]{}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=1.0\textwidth]{heuristica_2_50pts_refined.png}
-	\label{fig:heuristic2_100pts_refined} 
-	\caption[caption]{Malha gerada pela heurística 2 com 50 pontos com refinamento.}
-\end{figure}
+
+
 
 
 %
