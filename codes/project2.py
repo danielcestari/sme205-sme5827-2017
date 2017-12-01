@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 import corner_table as cnt
 imp.reload(cnt)
 
-def delaunay_triangulation(pts, plot=False, legalize_plot=False, legalize=True, remove_outer=False):
+def delaunay_triangulation(pts, plot=False, legalize_plot=False, legalize=True, remove_outer=True):
 	"""
 #########################################
 # Perform the Delaunay triangulation a set of points
@@ -73,7 +73,7 @@ imp.reload(cnt);
 imp.reload(pjt)
 
 # generate the random points with the outer triangle englobing them
-low, high, size = 0, 50, 50
+low, high, size = 0, 50, 10
 rd_pts = ndarray(buffer=uniform(low=low, high=high, size=2*size), dtype=float, shape=(size, 2))
 outer_pts = pjt.outer_triangle(rd_pts)
 rd_pts = vstack((outer_pts, rd_pts))
@@ -81,7 +81,6 @@ rd_pts = vstack((outer_pts, rd_pts))
 
 grd_truth = Delaunay(points=rd_pts, furthest_site=False, incremental=True)
 imp.reload(pjt); my_delaunay = pjt.delaunay_triangulation([tuple(i) for i in rd_pts[3:]])
-my_delaunay._clean_table()
 
 plt.subplot(1,2,1)
 plt.triplot(rd_pts[:,0], rd_pts[:,1], grd_truth.simplices.copy())
@@ -173,6 +172,10 @@ grd_table.test_delaunay()
 	# with the removal of the outer triangle it might lose the convex hull
 	# so it is require to walk over all border vertices drawing edges between them
 	
+	# get the faces that has 1 vertex without opposite vertex, -1
+	# these are the faces of the border
+	# then I think walking to the right and computing the orientation of the points of 
+	# 2 adjacent faces, I can a criterion to know if I should add a new triangle
 	
 	
 	return cn_table
