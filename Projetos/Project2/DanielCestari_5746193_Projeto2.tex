@@ -75,6 +75,18 @@ Na \textit{docstring} de cada método é apresentada uma descrição geral da fu
 
 Nesta etapa os pontos são centrado, é tomada a distância do ponto mais distante da origem como o raio de um círculo que engloba todos os pontos. Esse raio é definido como a coordenada $y$ do primeiro vértice do triângulo, a coordenada $x$ é definida como $0$. Para encontrar os outros dois pontos é feita uma rotação de $\frac{-2\pi}{3} rad$ do ponto inicial duas vezes. Por fim, aos pontos encontrados são levados para a localização inicial dos dados.
 
+A figura \ref{fig:outer_triangle} ilustra esse processo.
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=.8\textwidth]{./imgs/outer_triangle.png}
+	\label{fig:outer_triangle} 
+	\caption[caption]{Exemplo de triângulo externo.}
+\end{figure}
+
+
+
 A seguir é mostrado a função que calcula os vértices do triângulo externo.
 %%%%%%%%%%%%%%%%%%%%
 % def outer_triangle
@@ -82,152 +94,224 @@ A seguir é mostrado a função que calcula os vértices do triângulo externo.
 %%%%%%%%%%%%%%%%%%%%
 
 
-Próximas funções
-
-% find_triangles
-% triangle_share_edge
-% remove_triangle
-% add_triangle
-% legalize
-% _clean_table
 
 
+\subsection{Encontrar triângulo que contém determinado ponto}
 
+Esta função retorna o índice do triângulo que contém o ponto passado. Basicamente é feita uma busca aleatória dos triângulos presentes na estrutura de dados. Através das coordenadas baricêntricas é possível determinar se o ponto pertence ao triângulo em questão.
 
+Posteriormente o Professor passou um algoritmo para a determinação de tal triângulo, mas este algoritmo ainda não foi implementado.
 
-\subsection{Particionamento do domínio e determinação dos bordos}
-
-A função \textit{partitionate\_domain} chama as funções que realizam o particionamento e determinação dos bordos, \textit{heuristic\_1} e \textit{heuristic\_2}. Para a reutilização do código que resolve a equação de \textit{Laplace} cada partição é salva em arquivo, e essa função que salva cada partição em arquivo.
-Abaixo é mostrada a função.
-
-%%%%%%%%%%%%%%%%%%%%
-% def partitionate_domain
-%\inputpython{project1.py}{438}{484}
-%%%%%%%%%%%%%%%%%%%%
-
-A diferença entre as duas heurísticas está na divisão feita sobre as partições que contém o círculo.
-
-A primeira heurística (função \textit{heuristic\_1}), na partição do círculo, define o bordo de cima como a parte de cima do domínio mais a reta vertical até chegar ao círculo, e o mesmo princípio para o bordo de baixo, seguindo o sentido da esquerda para a direita. Os bordos da esquerda e direita são definidos pela reta vertical e pela curva, dependendo se a partição está a direita ou a esquerda da curva, e seguindo o sentido de baixo para cima.
-As figuras \ref{fig:heuristic1_top1} e \ref{fig:heuristic1_top2} mostram as malhas geradas pela heurística 1 nas partições do círculo. As cores definem os bordos, azul bordo de cima, laranja bordo de baixo, verde bordo da esquerda, e vermelho bordo da direita.
-
-Após a apresentação do trabalho foi incorporado o refinamento dos bordos na heurística 1, e foram removidas as singularidades, quadriláteros com um dos lados de comprimento zero.
 
 
 
 %%%%%%%%%%%%%%%%%%%%
-% def heuristic_1
-%\inputpython{project1.py}{78}{256}
+% def find_triangle
+\inputpython{corner_table.py}{304}{386}
+%%%%%%%%%%%%%%%%%%%%
+
+
+\subsection{Encontrar triângulos que compartilhem aresta}
+
+Esta função permite fazer a busca pelos índices dos \textit{corners} ou pelas arestas. As arestas são definidas pelos índices dos vértices, sem importar a ordem dos vértices. É retornado o índice dos dois triângulos que compartilhem a aresta passada.
+
+Para essa busca, os vértices são convertidos nos seus respectivos \textit{corners}, então é feita uma simples consulta a estrutura de dados para pegar a primeira face, e a segunda faces é determinada pelo \textit{corner} à direita do primeiro.
+
+A figura \ref{fig:find_triangle} ilustra um exemplo. É passada a aresta $(V2,V3)$, são determinados os \textit{corners} relacionados à esses vértices, no caso ${C_2, C_3, C_4, C_5}$. Como os \textit{corners} são armazenados na estrutura orientados, é preciso apenas do primeiro \textit{corner} relacionado à $V2$, e com o \textit{corner} à direita desse já consegue-se determinar o triângulo adjacente.
+ 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{./imgs/corner_table_example.png}
+	\label{fig:find_triangle} 
+	\caption[caption]{Exemplo de \textit{Corner table}.}
+\end{figure}
+
+
+A seguir é exibida o código da função que encontra os triângulos que compartilham aresta.
+%%%%%%%%%%%%%%%%%%%%
+% def triangles_share_edges
+\inputpython{corner_table.py}{248}{289}
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+\subsection{Remover triângulo}
+
+Função bem simples, que por questões de eficiência apenas marca as linhas dos \textit{corners} do triângulo como $-1$ sem remover os elementos da \textit{Corner table}. Como, também por questões de eficiência na busca, são mantidas estruturas \textit{hash} auxiliares para relacionar um dado vértice a seus \textit{corners} e uma dada face a seus \textit{corners}, essas estruturas precisam ser atualizadas. Por fim é reatribuído os \textit{corners} à direita e esquerda e \textit{corners} opostos, dos \textit{corners} que faziam referência aos \textit{corners} removidos, basicamente as faces que compartilhavam arestas.
+
+
+A seguir é exibida o código da função que remove triângulos.
+%%%%%%%%%%%%%%%%%%%%
+% def remove_triangle
+\inputpython{corner_table.py}{545}{594}
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\subsection{Adicionar triângulo}
+
+Operação simples de adicionar um triângulo especificado por 3 vértices. Primeiro verifica se a ordem dos vértices passados segue a orientação da estrutura, se não inverte a ordem, depois são adicionados os vértices nas estruturas auxiliares, por fim 3 \textit{corners} representando o triângulo são adicionados à \textit{Corner table}. Um último passo é recalcular os \textit{corners} à direita, esquerda e opostos dos \textit{corners} inseridos e dos restantes.
+
+
+A seguir é exibida o código da função que adiciona triângulos.
+%%%%%%%%%%%%%%%%%%%%
+% def add_triangle
+\inputpython{corner_table.py}{597}{681}
+%%%%%%%%%%%%%%%%%%%%
+
+
+
+\subsection{Legalização de triângulos}
+
+Está é uma função importante que garante que quando um ponto é inserido na triangulação já existente, os triângulos modificados continuem sendo \textit{Delaunay}.
+
+É passado para a função um ponto, o ponto que foi inserido, e a face desse ponto. É verificado então se o vértice oposto ao ponto inserido, com relação à aresta oposta, respeita o teste do incírculo, caso o vértice oposto esteja dentro do circuncirculo do triângulo adicionado, é realizado o \textit{flip} da aresta. Esse \textit{flip} resulta em dois outros triângulos que novamente precisam ser verificados em relação ao mesmo ponto e suas arestas opostas.
+
+
+A figura \ref{fig:flip} ilustra um exemplo de \textit{flip} de aresta realizado durante a legalização.
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{./imgs/flip_example.png}
+	\label{fig:flip} 
+	\caption[caption]{Exemplo de \textit{flip} de aresta.}
+\end{figure}
+
+A seguir é exibida o código da função que legaliza arestas.
+%%%%%%%%%%%%%%%%%%%%
+% def legalize
+\inputpython{corner_table.py}{163}{244}
+%%%%%%%%%%%%%%%%%%%%
+
+
+A operação de \textit{flip} é bem simples, dados dois triângulos que compartilhem uma aresta, esta aresta que eles compartilham é trocada pela aresta dos vértices opostos. Na implementação isso é feito removendo-se os dois triângulos e adicionando dois outros. 
+
+A seguir é exibida o código da função que faz \textit{flip} de arestas.
+%%%%%%%%%%%%%%%%%%%%
+% def flip_triangles
+\inputpython{corner_table.py}{468}{541}
 %%%%%%%%%%%%%%%%%%%%
 
 
 
 
 
-A heurística 2 difere da 1, na sua definição dos bordos sobre a partição da curva. Neste caso, a divisão é feita seguindo o lado, se lado em questão está a esquerda então é o bordo esquerdo, se está a direita é o bordo direito, se está acima é o de cima e se está abaixo o de baixo. Esta heurística não apresenta refinamento nos bordos.
-As figuras \ref{fig:heuristic2_top1} e \ref{fig:heuristic2_top2} mostram malhas geradas utilizando a heurística 2, as cores têm o mesmo significado que o relatado na heurística 1.
+\subsection{Limpeza da estrutura}
+
+Esta função é chamada após a triangulação ser concluída para remover os \textit{corners} excluídos da estrutura. Basicamente recalcula os índices dos \textit{corners}, vértices e faces, e agora sim removendo as entradas excluídas.
 
 
-
+A seguir é exibida o código da função que limpa a estrutura.
 %%%%%%%%%%%%%%%%%%%%
-% def heuristic_2
-%\inputpython{project1.py}{260}{433}
-%%%%%%%%%%%%%%%%%%%%
-
-
-\subsection{Geração da malha}
-
-A função que gera a malha chama as funções que criam o domínio e o particionam, e depois resolve a equação de \textit{Laplace} em cada partição individualmente. Após a malha de cada partição ser gerada, elas são unidas em duas malhas e então o refinamento é realizado resolvendo a equação de \textit{Poisson} nas duas malhas finais. Mesmo que um refinamento utilizando as funções de controle não seja realizado, como a equação de \textit{Laplace} é utilizada novamente com as malhas unidas, é feita uma suavização nos pontos de união das malhas.
-
-Essa é a principal função que chama todas as outras necessárias, e por isso é cheia de parâmetros. Todos descritos na \textit{docstring}, basicamente juntou todos os parâmetros das funções anteriores mais os parâmetros relativos ao refinamento da malha.
-
-Abaixo é apresentada a função \textit{generate\_grid}.
-
-%%%%%%%%%%%%%%%%%%%%
-% def generate_grid
-%\inputpython{project1.py}{489}{729}
+% def _clean_table
+\inputpython{corner_table.py}{53}{111}
 %%%%%%%%%%%%%%%%%%%%
 
-O arquivo \textit{VTK} final é o resultado da união das duas malhas finais refinadas. Foi preciso modificar o código original que gerava o \textit{VTK} para receber uma lista de malhas e quando salvar em disco, produzir apenas um arquivo. Foi tomado o cuidado para vértices posicionados na mesma posição não aparecerem repetidos, ou seja, as malhas são realmente unidas.
+
+\subsection{Outras funções}
+
+Os métodos descritos anteriormente são os principais para a triangulação, no entanto, a fim de validar a implementação outras funções foram implementadas.
+
+\begin{itemize}	
+	\item \textbf{\textit{plot}:} Esta função faz o \textit{plot} da triangulação obtida;
+	\item \textbf{\textit{test\_delaunay}:} Faz a contagem do número de faces, de faces orientadas e de faces \textit{delaunay};
+	\item \textbf{\textit{bari\_coord}:} Calcula as coordenada baricêntricas de um ponto;
+	\item \textbf{\textit{inCircle}:} Realiza o teste do incirculo;
+	\item \textbf{\textit{orientation}:} Verifica se a orientação de 3 pontos está consistente;
+	\item \textbf{\textit{fix\_opposite\_left\_right}:} Calcula os \textit{corners} opostos, à direita e esquerda, mantendo a estrutura consistente.
+\end{itemize}
+
 
 
 \section{Resultados}
 
 
-Nesta seção serão apresentados os resultados obtidos com a implementação descrita anteriormente. Primeiro serão mostradas as malhas para a heurística 1 variando o número de pontos na malha, em seguida será feito o mesmo para a heurística 2.
-A configuração do domínio e da curva será a mesma para ambas as heurísticas.
+Nesta seção são apresentados os resultados da implementação.
 
-Após a apresentação do trabalho foram apontados algumas correções, agora incorporadas, mas devido às modificações o exemplo utilizando o aerofólio ficou ruim e foi removido deste relatório.
 
-Todos os arquivos VTK gerados foram anexados.
+Alterando os parâmetros \textit{plot}, \textit{legalize} e \textit{legalize\_plot} da função que realiza a triangulação, as figuras \ref{fig:ex2_final} e \ref{fig:ex3_final} foram obtidas. Esses parâmetros permitem fazer \textit{plots} da triangulação passo a passo.
 
-\subsection{Heurística 1}
+A figura \ref{fig:ex2_final} Mostra a inserção de pontos, no triângulo externo, sem o processo de legalização das arestas. Com isso é possível ver como a simples adição de pontos pode resultar em triângulos alongados, de qualidade ruim. 
 
-Código para gerar uma malha com 52 pontos nos bordos esquerdo e direito. Curva gerada com 52 pontos, centrada na origem, domínio com comprimento 10, altura 8, e comprimento 3 à direita da curva. O domínio é divido em 4 partes, e o refinamento é deixado apenas nos bordos e a equação de \textit{Laplace} propaga esse refinamento para o interior do domínio.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{./imgs/ex2_final.png}
+	\label{fig:ex2_final} 
+	\caption[caption]{Passo a passo da inserção de pontos \textbf{sem} legalização de arestas.}
+\end{figure}
+
+Já na figura \ref{fig:ex3_final} é exibida a inserção dos mesmos pontos, embora que em ordem diferente já que inserção dos pontos é aleatória, mas agora com a legalização das arestas. Isso garante que a cada inserção a triangulação continue sendo \textit{Delaunay}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{./imgs/ex3_final.png}
+	\label{fig:ex3_final} 
+	\caption[caption]{Passo a passo da inserção de pontos \textbf{com} legalização de arestas.}
+\end{figure}
+
+
+
+A seguir é exibido um exemplo de código para execução de uma triangulação \textit{Delaunay} de 50 pontos gerados aleatoriamente segundo uma distribuição uniforme de 0 a 50. A figura \ref{fig:ex1} mostra o resultado final da triangulação, à direita é exibida a triangulação obtida pela bibliteca \textit{SciPy}, em azul, e à direita a triangulação obtida pela implementação do projeto. Neste exemplo, o triângulo externo ainda não foi removido. A figura \ref{fig:ex1_not_convex} mostra a triangulação com a remoção do triângulo externo.
+
 
 
 \begin{verbatim}
+# example with random points
 import imp
-import numpy as np
-from matplotlib import pyplot as plt
-import project1 as pjt
+import project2 as pjt
+import corner_table as cnt
+from scipy.spatial import Delaunay
+import matplotlib.pyplot as plt
+from numpy.random import uniform
+from numpy import array, matrix, vstack, ndarray
 
-imp.reload(pjt);  
-grid = pjt.generate_grid(resolution=52, left_border=3, domain_length=10, 
-domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
-filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle_h1_50pts", plot=True)
+
+# generate the random points with the outer triangle englobing them
+low, high, size = 0, 50, 10
+rd_pts = ndarray(buffer=uniform(low=low, high=high, size=2*size), 
+								dtype=float, shape=(size, 2))
+outer_pts = pjt.outer_triangle(rd_pts)
+rd_pts = vstack((outer_pts, rd_pts))
+
+
+grd_truth = Delaunay(points=rd_pts, furthest_site=False, incremental=True)
+my_delaunay = pjt.delaunay_triangulation([tuple(i) for i in rd_pts[3:]])
+
+plt.subplot(1,2,1)
+plt.triplot(rd_pts[:,0], rd_pts[:,1], grd_truth.simplices.copy())
+edges = my_delaunay.plot(show=True, subplot={'nrows':1, 'ncols':2, 'num':2})
+
+plt.close('all')
+
+grd_table = cnt.CornerTable()
+a = [grd_table.add_triangle([tuple(i) for i in rd_pts[t]]) 
+						for t in grd_truth.simplices]
+my_delaunay.test_delaunay()
+grd_table.test_delaunay()
+
 \end{verbatim}
-
-Abaixo o código agora utilizando 100 pontos.
-\begin{verbatim}
-import imp
-import numpy as np
-from matplotlib import pyplot as plt
-import project1 as pjt
-
-imp.reload(pjt);  
-grid = pjt.generate_grid(resolution=100, left_border=3, domain_length=10, 
-domain_height=4, curve_params={"radius":1}, equation=pjt.circle, 
-filename_curve="", heuristic=pjt.heuristic_1, k=3, filename_borders="circle_h1_100pts", plot=True)
-\end{verbatim}
-
-
-%\begin{figure}[H]
-%	\centering
-%	\includegraphics[width=1.0\textwidth]{heuristica_1_50pts.png}
-%	\label{fig:heuristic1_50pts} 
-%	\caption[caption]{Malha gerada pela heurística 1 com 50 pontos.}
-%\end{figure}
-%
-%\begin{figure}[H]
-%	\centering
-%	\includegraphics[width=1.0\textwidth]{heuristica_1_100pts.png}
-%	\label{fig:heuristic1_100pts} 
-%	\caption[caption]{Malha gerada pela heurística 1 com 100 pontos.}
-%\end{figure}
 
 
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex_outer.png}
-	\label{fig:heuristic1_50pts_refined} 
-	\caption[caption]{}
+	\includegraphics[width=1.0\textwidth]{./imgs/ex1_outer.png}
+	\label{fig:ex1} 
+	\caption[caption]{Exemplo de triangulação com 50 pontos aleatórios, ainda com o triângulo externo. Triangulação à esquerda gerada pela biblioteca \textit{SciPy}, à direita gerada pela implementação do projeto. Na parte de baixo é exibida a versão ampliada na triangulação.Triangulação à esquerda gerada pela biblioteca \textit{SciPy}, à direita gerada pela implementação do projeto.}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex_outer_zoom.png}
-	\label{fig:heuristic1_100pts_refined} 
-	\caption[caption]{}
-\end{figure}
-
+Um detalhe importante no exemplo da figura \ref{fig:ex1_not_convex} é que nas referência do algoritmo de inserção de pontos incremental, não há referência sobre a inserção do fecho convexo ao final da triangulação. E o exemplo da figura deixa claro que em alguns casos, quando os vértices, e por consequência os triângulos, do triângulo externo são removidos, a triangulação resultante pode não ser convexa. Apesar disso a biblioteca \textit{SciPy} corretamente resulta numa triangulação que é convexa. E pelo exemplo anterior, figura \ref{fig:ex1}, fica claro que se ambas as triangulações deixarem o triângulo externo, o resultado é o mesmo, então a diferença está no passo após a remoção do triângulo externo.
 
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=1.0\textwidth]{./imgs/ex1_not_convex.png}
-	\label{fig:heuristic1_100pts_refined} 
-	\caption[caption]{}
+	\label{fig:ex1_not_convex} 
+	\caption[caption]{Exemplo de triangulação final com 50 pontos aleatórios. Detalhe para a diferença entre as triangulações, a da direita convexa e a da esquerda não convexa. Triangulação à esquerda gerada pela biblioteca \textit{SciPy}, à direita gerada pela implementação do projeto.}
 \end{figure}
 
 
